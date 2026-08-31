@@ -1,2 +1,0 @@
-# pontechetado
-proyecto de titulo
