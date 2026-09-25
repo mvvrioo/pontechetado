@@ -1,4 +1,4 @@
-#PonteChetado
+# PonteChetado
 
 Descripción
 PonteChetado es una aplicación móvil enfocada en la gestión y gamificación del entrenamiento físico. 
