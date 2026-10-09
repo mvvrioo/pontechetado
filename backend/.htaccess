@@ -1,0 +1,10 @@
+# Apache (XAMPP) a veces borra la cabecera Authorization: esto la deja pasar a PHP
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+# No listar el contenido de las carpetas
+Options -Indexes

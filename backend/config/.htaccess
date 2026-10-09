@@ -1,0 +1,2 @@
+# Nadie puede abrir los archivos de config desde el navegador
+Require all denied
