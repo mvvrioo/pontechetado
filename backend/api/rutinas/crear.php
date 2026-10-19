@@ -1,6 +1,6 @@
 <?php
 // POST /api/rutinas/crear.php   (requiere token)
-// Body: { "nombre": "Pecho y tríceps", "descripcion": "opcional" }
+// Body: { "nombre": "Pecho y tríceps", "descripcion": "opcional", "dia_semana": 1 (opcional, 1=lunes..7=domingo) }
 require_once __DIR__ . '/../../config/helpers.php';
 requerir_metodo('POST');
 
@@ -9,6 +9,7 @@ $datos   = leer_json();
 
 $nombre      = texto($datos, 'nombre', 100);
 $descripcion = texto($datos, 'descripcion', 255);
+$dia_semana  = leer_dia_semana($datos);
 
 if ($nombre === '') {
     error_json("La rutina necesita un nombre");
@@ -31,8 +32,8 @@ if (!es_premium($usuario)) {
 }
 
 $desc_db = $descripcion === '' ? null : $descripcion;
-$stmt = $conn->prepare("INSERT INTO rutinas (usuario_id, nombre, descripcion) VALUES (?, ?, ?)");
-$stmt->bind_param("iss", $usuario['id'], $nombre, $desc_db);
+$stmt = $conn->prepare("INSERT INTO rutinas (usuario_id, nombre, descripcion, dia_semana) VALUES (?, ?, ?, ?)");
+$stmt->bind_param("issi", $usuario['id'], $nombre, $desc_db, $dia_semana);
 $stmt->execute();
 
 responder([
@@ -40,6 +41,7 @@ responder([
         "id"               => $stmt->insert_id,
         "nombre"           => $nombre,
         "descripcion"      => $desc_db,
+        "dia_semana"       => $dia_semana,
         "total_ejercicios" => 0,
     ],
 ], 201);

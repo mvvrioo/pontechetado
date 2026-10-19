@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models.dart';
 import '../services/api_service.dart';
+import '../tema.dart';
 import '../utils.dart';
+import 'rutinas_screen.dart' show elegirDiaSemana;
 
 class RutinaDetalleScreen extends StatefulWidget {
   final int rutinaId;
@@ -97,6 +99,22 @@ class _RutinaDetalleScreenState extends State<RutinaDetalleScreen> {
     }
   }
 
+  Future<void> _cambiarDia() async {
+    final rutina = _rutina;
+    if (rutina == null) return;
+    final dia = await elegirDiaSemana(context, actual: rutina.diaSemana);
+    if (dia == null) return;
+    try {
+      final mensaje = await _api.asignarDiaRutina(rutina.id, dia == 0 ? null : dia);
+      if (!mounted) return;
+      mostrarMensaje(context, mensaje);
+      _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      mostrarError(context, e);
+    }
+  }
+
   Future<void> _quitar(EjercicioRutina e) async {
     try {
       await _api.quitarEjercicioDeRutina(e.id);
@@ -129,25 +147,40 @@ class _RutinaDetalleScreenState extends State<RutinaDetalleScreen> {
     if (_error != null) return VistaError(error: _error!, alReintentar: _cargar);
 
     final rutina = _rutina!;
-    if (rutina.ejercicios.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text(
-            'Esta rutina no tiene ejercicios.\nAgrega el primero 👇',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
       children: [
+        // Día de la semana en que toca esta rutina
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ActionChip(
+            avatar: Icon(
+              Icons.calendar_month,
+              size: 18,
+              color: rutina.diaSemana == null ? Colores.textoSuave : Colores.marca,
+            ),
+            label: Text(
+              rutina.diaSemana == null
+                  ? 'Sin día · toca para asignar'
+                  : 'Toca el ${nombreDia(rutina.diaSemana).toLowerCase()}',
+            ),
+            onPressed: _cambiarDia,
+          ),
+        ),
+        const SizedBox(height: 8),
         if (rutina.descripcion != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(rutina.descripcion!),
+          ),
+        if (rutina.ejercicios.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Text(
+              'Esta rutina no tiene ejercicios.\nAgrega el primero 👇',
+              textAlign: TextAlign.center,
+            ),
           ),
         for (final (i, e) in rutina.ejercicios.indexed)
           Card(

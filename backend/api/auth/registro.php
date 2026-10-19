@@ -39,5 +39,6 @@ responder([
     "token"   => $token,
     "usuario" => usuario_publico([
         "id" => $id, "nombre" => $nombre, "email" => $email, "premium_hasta" => null,
+        "rol" => ROL_USUARIO, "gimnasio_id" => null,
     ]),
 ], 201);

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "📱 App (Flutter)",
+			"path": "C:/proyectos/ponte_chetado/app"
+		},
+		{
+			"name": "🖥️ Backend (PHP) - el que corre en XAMPP",
+			"path": "C:/xampp/htdocs/PonteChetado"
+		},
+		{
+			"name": "🗄️ Base de datos (scripts SQL)",
+			"path": "C:/proyectos/ponte_chetado/base_de_datos"
+		}
+	],
+	"settings": {}
+}

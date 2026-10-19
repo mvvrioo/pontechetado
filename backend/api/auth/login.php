@@ -12,7 +12,12 @@ if ($email === '' || $password === '') {
     error_json("Ingresa email y contraseña");
 }
 
-$stmt = $conn->prepare("SELECT id, nombre, email, password_hash, premium_hasta FROM usuarios WHERE email = ?");
+$stmt = $conn->prepare(
+    "SELECT " . CAMPOS_USUARIO . ", u.password_hash
+       FROM usuarios u
+       LEFT JOIN gimnasios g ON g.id = u.gimnasio_id
+      WHERE u.email = ?"
+);
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $usuario = $stmt->get_result()->fetch_assoc();

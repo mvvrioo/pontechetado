@@ -47,11 +47,7 @@ $stmt->execute();
 $conn->commit();
 
 // Devolver el usuario actualizado
-$stmt = $conn->prepare("SELECT id, nombre, email, premium_hasta FROM usuarios WHERE id = ?");
-$stmt->bind_param("i", $usuario['id']);
-$stmt->execute();
-
 responder([
     "mensaje" => "¡Premium activado por $dias días! 💪",
-    "usuario" => usuario_publico($stmt->get_result()->fetch_assoc()),
+    "usuario" => usuario_publico(buscar_usuario($conn, $usuario['id'])),
 ]);

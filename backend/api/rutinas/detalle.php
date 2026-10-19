@@ -37,6 +37,7 @@ responder([
         "id"          => $rutina['id'],
         "nombre"      => $rutina['nombre'],
         "descripcion" => $rutina['descripcion'],
+        "dia_semana"  => $rutina['dia_semana'] === null ? null : (int)$rutina['dia_semana'],
         "ejercicios"  => $ejercicios,
     ],
 ]);

@@ -6,13 +6,13 @@ requerir_metodo('GET');
 $usuario = usuario_actual($conn);
 
 $stmt = $conn->prepare(
-    "SELECT r.id, r.nombre, r.descripcion, r.creado_en,
+    "SELECT r.id, r.nombre, r.descripcion, r.dia_semana, r.creado_en,
             COUNT(re.id) AS total_ejercicios
        FROM rutinas r
        LEFT JOIN rutina_ejercicios re ON re.rutina_id = r.id
       WHERE r.usuario_id = ?
-      GROUP BY r.id
-      ORDER BY r.creado_en DESC"
+      GROUP BY r.id, r.nombre, r.descripcion, r.dia_semana, r.creado_en
+      ORDER BY r.dia_semana IS NULL, r.dia_semana ASC, r.creado_en DESC"
 );
 $stmt->bind_param("i", $usuario['id']);
 $stmt->execute();
@@ -24,6 +24,7 @@ while ($fila = $resultado->fetch_assoc()) {
         "id"               => (int)$fila['id'],
         "nombre"           => $fila['nombre'],
         "descripcion"      => $fila['descripcion'],
+        "dia_semana"       => $fila['dia_semana'] === null ? null : (int)$fila['dia_semana'],
         "total_ejercicios" => (int)$fila['total_ejercicios'],
     ];
 }

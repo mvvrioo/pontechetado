@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../models.dart';
 import '../services/api_service.dart';
+import '../tema.dart';
 import '../utils.dart';
+import '../widgets/nivel.dart';
 
 class EntrenarScreen extends StatefulWidget {
   const EntrenarScreen({super.key});
@@ -18,6 +20,8 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
   EntrenoDelDia? _entreno;
   List<VolumenDia> _volumenUltimos14 = [];
   List<Ejercicio> _ejercicios = [];
+  Progreso? _progreso;
+  RutinaDetalle? _rutinaDelDia; // la rutina asignada al día de la semana elegido
   bool _cargando = true;
   Object? _error;
 
@@ -30,7 +34,8 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
   Future<void> _cargarTodo() async {
     if (!mounted) return;
     setState(() {
-      _cargando = true;
+      // Solo pantalla de carga la primera vez; después se refresca sin parpadear
+      _cargando = _entreno == null;
       _error = null;
     });
 
@@ -39,13 +44,24 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
         _api.entrenoDelDia(_fecha),
         _api.resumenVolumen(14),
         _api.listarEjercicios(),
+        _api.progreso(),
+        _api.listarRutinas(),
       ]);
+
+      // ¿Qué rutina toca este día de la semana? (lunes = 1 ... domingo = 7)
+      final (rutinas, _) = resultados[4] as (List<Rutina>, int?);
+      final delDia = rutinas.where((r) => r.diaSemana == _fecha.weekday);
+      final rutinaDelDia = delDia.isEmpty
+          ? null
+          : await _api.detalleRutina(delDia.first.id);
 
       if (!mounted) return;
       setState(() {
         _entreno = resultados[0] as EntrenoDelDia;
         _volumenUltimos14 = resultados[1] as List<VolumenDia>;
         _ejercicios = resultados[2] as List<Ejercicio>;
+        _progreso = resultados[3] as Progreso;
+        _rutinaDelDia = rutinaDelDia;
         _cargando = false;
       });
     } catch (e) {
@@ -273,19 +289,63 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
     if (resultado == null) return;
 
     try {
-      await _api.registrarSerie(
+      final (_, xp) = await _api.registrarSerie(
         ejercicioId: ejercicio.id,
         fecha: _fecha,
         pesoKg: resultado.pesoKg,
         repeticiones: resultado.repeticiones,
       );
       if (!mounted) return;
-      mostrarMensaje(context, 'Serie registrada ✅');
+      mostrarMensaje(
+        context,
+        xp == null || xp.ganada <= 0
+            ? 'Serie registrada ✅'
+            : 'Serie registrada ✅   +${xp.ganada} XP',
+      );
       await _cargarTodo();
+      if (!mounted) return;
+      final premium = !(_progreso?.bloqueado ?? true);
+      if (xp != null && xp.subioNivel && premium) {
+        await mostrarSubidaDeNivel(context, xp.nivel);
+      }
     } catch (e) {
       if (!mounted) return;
       mostrarError(context, e);
     }
+  }
+
+  /// Tocar un ejercicio del "plan de hoy": abre la serie con los datos de la rutina.
+  void _registrarDesdePlan(EjercicioRutina plan) {
+    final ejercicio = _ejercicios.firstWhere(
+      (e) => e.id == plan.ejercicioId,
+      orElse: () => Ejercicio(
+        id: plan.ejercicioId,
+        nombre: plan.nombre,
+        grupoMuscular: plan.grupoMuscular,
+        esPremium: false,
+        personalizado: false,
+        bloqueado: false,
+      ),
+    );
+    if (ejercicio.bloqueado) {
+      mostrarDialogoPremium(context, '"${ejercicio.nombre}" es un ejercicio Premium.');
+      return;
+    }
+    final hechas = _seriesHechas(plan.ejercicioId);
+    _abrirDialogoSerie(
+      ejercicio: ejercicio,
+      pesoInicial: hechas > 0 ? _ultimoPesoPara(plan.ejercicioId) : (plan.pesoKg ?? 0),
+      repeticionesInicial: hechas > 0
+          ? _ultimasRepeticionesPara(plan.ejercicioId)
+          : plan.repeticiones,
+    );
+  }
+
+  int _seriesHechas(int ejercicioId) {
+    for (final e in _entreno?.ejercicios ?? <EjercicioDelDia>[]) {
+      if (e.ejercicioId == ejercicioId) return e.series.length;
+    }
+    return 0;
   }
 
   Future<void> _eliminarSerie(SerieEntreno serie) async {
@@ -338,7 +398,25 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
     final totalVolumen = _entreno?.volumenTotal ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Entrenar')),
+      appBar: AppBar(
+        title: const Text('Entrenar'),
+        actions: [
+          if (_progreso != null && !_progreso!.bloqueado)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  'Nv. ${_progreso!.nivel.nivel}',
+                  style: const TextStyle(
+                    color: Colores.marca,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirAgregarEjercicio,
         icon: const Icon(Icons.add),
@@ -351,53 +429,9 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
           children: [
             _selectorFecha(),
             const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Volumen total',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${formatearKg(totalVolumen)} kg',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'Series',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '$_totalSeries',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _tarjetaDelDia(totalVolumen),
+            if (_rutinaDelDia != null && _rutinaDelDia!.ejercicios.isNotEmpty)
+              _tarjetaPlanDelDia(_rutinaDelDia!),
             const SizedBox(height: 16),
             if (_volumenUltimos14.isNotEmpty) ...[
               Text(
@@ -499,6 +533,171 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
                   ),
                 ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Cabecera: qué día es, qué rutina toca, volumen, series y XP del día.
+  Widget _tarjetaDelDia(double totalVolumen) {
+    final progreso = _progreso;
+    final series = [
+      for (final e in _entreno?.ejercicios ?? <EjercicioDelDia>[]) ...e.series,
+    ];
+    final xpDia = progreso?.xpDeDia(series) ?? 0;
+    final rutina = _rutinaDelDia?.nombre;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF26330F), Colores.superficie],
+        ),
+        border: Border.all(color: Colores.marca.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            nombreDia(_fecha.weekday).toUpperCase(),
+            style: const TextStyle(
+              color: Colores.marca,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            rutina == null ? 'Entreno libre' : 'Toca: $rutina',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          ),
+          if (rutina == null)
+            const Text(
+              'Asigna una rutina a este día en "Rutinas"',
+              style: TextStyle(color: Colores.textoSuave, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _datoCabecera('${formatearMiles(totalVolumen)} kg', 'volumen'),
+              _datoCabecera('$_totalSeries', 'series'),
+              _datoCabecera('+$xpDia', 'XP del día', resaltado: true),
+            ],
+          ),
+          if (progreso != null) ...[
+            const SizedBox(height: 16),
+            if (progreso.bloqueado)
+              Row(
+                children: [
+                  const Icon(Icons.lock, size: 16, color: Colores.premium),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Llevas ${formatearMiles(progreso.nivel.xpTotal)} XP. Activa Premium para ver tu nivel.',
+                      style: const TextStyle(fontSize: 13, color: Colores.textoSuave),
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              Text(
+                'Nivel ${progreso.nivel.nivel} · ${progreso.nivel.titulo}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              BarraXp(nivel: progreso.nivel),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _datoCabecera(String valor, String etiqueta, {bool resaltado = false}) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            valor,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: resaltado ? Colores.marca : Colores.texto,
+            ),
+          ),
+          Text(
+            etiqueta,
+            style: const TextStyle(fontSize: 12, color: Colores.textoSuave),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ejercicios de la rutina de hoy con cuántas series lleva de cada uno.
+  Widget _tarjetaPlanDelDia(RutinaDetalle rutina) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Plan de hoy · ${rutina.nombre}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Toca un ejercicio para registrar la serie',
+              style: TextStyle(fontSize: 12, color: Colores.textoSuave),
+            ),
+            const SizedBox(height: 6),
+            for (final plan in rutina.ejercicios)
+              Builder(
+                builder: (context) {
+                  final hechas = _seriesHechas(plan.ejercicioId);
+                  final completo = hechas >= plan.series;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    onTap: () => _registrarDesdePlan(plan),
+                    leading: Icon(
+                      completo ? Icons.check_circle : Icons.radio_button_unchecked,
+                      color: completo ? Colores.marca : Colores.textoSuave,
+                    ),
+                    title: Text(
+                      plan.nombre,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        decoration: completo ? TextDecoration.lineThrough : null,
+                        color: completo ? Colores.textoSuave : Colores.texto,
+                      ),
+                    ),
+                    subtitle: Text(
+                      [
+                        '${plan.series} × ${plan.repeticiones}',
+                        if (plan.pesoKg != null) '${formatearKg(plan.pesoKg!)} kg',
+                      ].join(' · '),
+                    ),
+                    trailing: Text(
+                      '$hechas/${plan.series}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: completo ? Colores.marca : Colores.texto,
+                      ),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),

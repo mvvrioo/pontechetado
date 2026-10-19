@@ -1,6 +1,7 @@
 <?php
 // POST /api/entrenos/registrar_serie.php   (requiere token)
 // Body: { "ejercicio_id": 12, "fecha": "2026-10-06", "peso_kg": 25, "repeticiones": 8 }
+// Responde la serie creada + la XP ganada y si subió de nivel.
 require_once __DIR__ . '/../../config/helpers.php';
 requerir_metodo('POST');
 
@@ -59,6 +60,9 @@ if ((int)$ejercicio['es_premium'] === 1 && !es_premium($usuario)) {
     error_json("Este ejercicio requiere Premium", 403, ["requiere_premium" => true]);
 }
 
+// XP antes de guardar (para saber cuánto ganó y si subió de nivel)
+$nivel_antes = info_nivel(xp_total($conn, $usuario['id']));
+
 $stmt = $conn->prepare(
     "SELECT COALESCE(MAX(numero_serie), 0) + 1 AS siguiente
        FROM series_entrenamiento
@@ -102,4 +106,13 @@ $serie['peso_kg'] = (float)$serie['peso_kg'];
 $serie['repeticiones'] = (int)$serie['repeticiones'];
 $serie['volumen'] = (float)$serie['volumen'];
 
-responder(["serie" => $serie]);
+$nivel_despues = info_nivel(xp_total($conn, $usuario['id']));
+
+responder([
+    "serie" => $serie,
+    "xp"    => [
+        "ganada"      => $nivel_despues['xp_total'] - $nivel_antes['xp_total'],
+        "subio_nivel" => $nivel_despues['nivel'] > $nivel_antes['nivel'],
+        "nivel"       => $nivel_despues,
+    ],
+]);

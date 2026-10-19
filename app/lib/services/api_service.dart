@@ -204,7 +204,8 @@ class ApiService {
     return Ejercicio.fromJson(datos['ejercicio'] as Map<String, dynamic>);
   }
 
-  Future<SerieEntreno> registrarSerie({
+  /// Guarda la serie y devuelve también la XP que ganó (y si subió de nivel).
+  Future<(SerieEntreno, XpGanada?)> registrarSerie({
     required int ejercicioId,
     required DateTime fecha,
     required double pesoKg,
@@ -216,11 +217,15 @@ class ApiService {
       'peso_kg': pesoKg,
       'repeticiones': repeticiones,
     });
-    return SerieEntreno.fromJson({
+    final serie = SerieEntreno.fromJson({
       ...datos['serie'] as Map<String, dynamic>,
       'fecha': datos['serie']['fecha'] as String,
       'ejercicio_id': datos['serie']['ejercicio_id'] as int,
     });
+    final xp = datos['xp'] == null
+        ? null
+        : XpGanada.fromJson(datos['xp'] as Map<String, dynamic>);
+    return (serie, xp);
   }
 
   Future<EntrenoDelDia> entrenoDelDia(DateTime fecha) async {
@@ -248,11 +253,25 @@ class ApiService {
     return (rutinas, datos['limite_rutinas'] as int?);
   }
 
-  Future<void> crearRutina(String nombre, String descripcion) async {
+  Future<void> crearRutina(
+    String nombre,
+    String descripcion, {
+    int? diaSemana,
+  }) async {
     await _post('rutinas/crear.php', {
       'nombre': nombre,
       'descripcion': descripcion,
+      'dia_semana': diaSemana,
     });
+  }
+
+  /// diaSemana: 1 = lunes ... 7 = domingo, null = sin día.
+  Future<String> asignarDiaRutina(int rutinaId, int? diaSemana) async {
+    final datos = await _post('rutinas/asignar_dia.php', {
+      'id': rutinaId,
+      'dia_semana': diaSemana,
+    });
+    return datos['mensaje'] as String;
   }
 
   Future<RutinaDetalle> detalleRutina(int id) async {
@@ -285,7 +304,86 @@ class ApiService {
   }
 
   // ------------------------------------------------------------------
-  //  Premium
+  //  Gamificación
+  // ------------------------------------------------------------------
+  Future<Progreso> progreso() async {
+    final datos = await _get('gamificacion/progreso.php');
+    return Progreso.fromJson(datos);
+  }
+
+  // ------------------------------------------------------------------
+  //  Gimnasios
+  // ------------------------------------------------------------------
+  Future<List<Gimnasio>> listarGimnasios() async {
+    final datos = await _get('gimnasios/listar.php');
+    return (datos['gimnasios'] as List)
+        .map((g) => Gimnasio.fromJson(g as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Panel del admin. El superadmin pasa [gimnasioId] para ver cualquier gimnasio.
+  Future<PanelGimnasio> panelGimnasio({int? gimnasioId}) async {
+    final ruta = gimnasioId == null
+        ? 'admin/gimnasio.php'
+        : 'admin/gimnasio.php?gimnasio_id=$gimnasioId';
+    return PanelGimnasio.fromJson(await _get(ruta));
+  }
+
+  Future<String> activarPremiumCliente({
+    required String email,
+    required int meses,
+    int? gimnasioId,
+  }) async {
+    final datos = await _post('admin/activar_premium.php', {
+      'email': email,
+      'meses': meses,
+      if (gimnasioId != null) 'gimnasio_id': gimnasioId,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  Future<String> quitarPremiumCliente(int usuarioId, {int? gimnasioId}) async {
+    final datos = await _post('admin/quitar_premium.php', {
+      'usuario_id': usuarioId,
+      if (gimnasioId != null) 'gimnasio_id': gimnasioId,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  // ---- Solo superadmin (equipo PonteChetado) ----
+  Future<String> crearGimnasio(String nombre, String direccion) async {
+    final datos = await _post('superadmin/crear_gimnasio.php', {
+      'nombre': nombre,
+      'direccion': direccion,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  /// Si la cuenta no existe, se crea con [nombre] y [password].
+  Future<String> asignarAdminGimnasio({
+    required int gimnasioId,
+    required String email,
+    String nombre = '',
+    String password = '',
+  }) async {
+    final datos = await _post('superadmin/asignar_admin.php', {
+      'gimnasio_id': gimnasioId,
+      'email': email,
+      'nombre': nombre,
+      'password': password,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  Future<String> quitarAdminGimnasio(int usuarioId) async {
+    final datos = await _post('superadmin/quitar_admin.php', {
+      'usuario_id': usuarioId,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  // ------------------------------------------------------------------
+  //  Premium (códigos de prueba)
   // ------------------------------------------------------------------
   /// Canjea un código. Devuelve el mensaje del servidor.
   Future<String> activarPremium(String codigo) async {

@@ -1,1 +1,5 @@
 backend/config/db.php
+
+# Respaldos comprimidos (pesan mucho)
+*.rar
+*.zip

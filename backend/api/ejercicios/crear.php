@@ -40,7 +40,7 @@ $stmt->execute();
 
 $ejercicio_id = (int)$conn->insert_id;
 
-$responder([
+responder([
     "ejercicio" => [
         "id"             => $ejercicio_id,
         "nombre"         => $nombre,

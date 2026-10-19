@@ -2,6 +2,33 @@ import 'package:flutter/material.dart';
 
 import 'services/api_service.dart';
 
+/// Índice 1 = lunes ... 7 = domingo (igual que en la base de datos).
+const nombresDias = [
+  '',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+  'Domingo',
+];
+const letrasDias = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+String nombreDia(int? dia) =>
+    (dia == null || dia < 1 || dia > 7) ? 'Sin día' : nombresDias[dia];
+
+/// 12450.5 -> "12.451" (separador de miles chileno)
+String formatearMiles(num n) {
+  final texto = n.round().abs().toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < texto.length; i++) {
+    if (i > 0 && (texto.length - i) % 3 == 0) buffer.write('.');
+    buffer.write(texto[i]);
+  }
+  return n < 0 ? '-$buffer' : buffer.toString();
+}
+
 String formatearFecha(DateTime f) =>
     '${f.day.toString().padLeft(2, '0')}/${f.month.toString().padLeft(2, '0')}/${f.year}';
 
@@ -68,7 +95,8 @@ Future<void> mostrarDialogoPremium(BuildContext context, String mensaje) {
       icon: const Icon(Icons.workspace_premium, size: 40),
       title: const Text('Función Premium'),
       content: Text(
-        '$mensaje\n\nActiva Premium desde la pestaña "Perfil" con tu código.',
+        '$mensaje\n\nPremium se activa en tu gimnasio: paga tu membresía en un '
+        'gimnasio asociado (pestaña "Gimnasios") y pide que la activen con tu correo.',
       ),
       actions: [
         FilledButton(

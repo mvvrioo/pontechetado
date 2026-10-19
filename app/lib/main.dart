@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/api_service.dart';
+import 'tema.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -23,7 +24,7 @@ void main() {
 class PonteChetadoApp extends StatelessWidget {
   const PonteChetadoApp({super.key});
 
-  static const colorMarca = Color(0xFFB6FF3B); // verde "chetado"
+  static const colorMarca = Colores.marca; // verde "chetado"
 
   @override
   Widget build(BuildContext context) {
@@ -31,16 +32,7 @@ class PonteChetadoApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       title: 'Ponte Chetado',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: colorMarca,
-          brightness: Brightness.dark,
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-        ),
-      ),
+      theme: construirTema(),
       home: const InicioScreen(),
     );
   }
