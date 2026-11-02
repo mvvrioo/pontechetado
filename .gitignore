@@ -7,3 +7,6 @@ backend/config/db.php
 # Docker: contrasenas locales y respaldo de la base con datos de prueba
 .env
 base_de_datos/docker-init/*.sql
+
+# Script ya aplicado, borrado de GitHub a proposito: se queda solo en el PC
+base_de_datos/actualizacion_gimnasios_gamificacion.sql
