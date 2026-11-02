@@ -178,7 +178,7 @@ class _RutinaDetalleScreenState extends State<RutinaDetalleScreen> {
           const Padding(
             padding: EdgeInsets.all(32),
             child: Text(
-              'Esta rutina no tiene ejercicios.\nAgrega el primero 👇',
+              'Esta rutina no tiene ejercicios.\nAgrega el primero.',
               textAlign: TextAlign.center,
             ),
           ),

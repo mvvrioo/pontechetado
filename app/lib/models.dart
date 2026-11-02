@@ -224,6 +224,7 @@ class Rutina {
   final String? descripcion;
   final int totalEjercicios;
   final int? diaSemana; // 1 = lunes ... 7 = domingo, null = sin día
+  final bool generada; // true = la creó el sistema (rutina personalizada)
 
   Rutina({
     required this.id,
@@ -231,6 +232,7 @@ class Rutina {
     this.descripcion,
     required this.totalEjercicios,
     this.diaSemana,
+    this.generada = false,
   });
 
   factory Rutina.fromJson(Map<String, dynamic> json) => Rutina(
@@ -239,6 +241,7 @@ class Rutina {
     descripcion: json['descripcion'] as String?,
     totalEjercicios: json['total_ejercicios'] as int,
     diaSemana: json['dia_semana'] as int?,
+    generada: json['generada'] as bool? ?? false,
   );
 }
 
@@ -279,6 +282,7 @@ class RutinaDetalle {
   final String nombre;
   final String? descripcion;
   final int? diaSemana;
+  final bool generada;
   final List<EjercicioRutina> ejercicios;
 
   RutinaDetalle({
@@ -286,6 +290,7 @@ class RutinaDetalle {
     required this.nombre,
     this.descripcion,
     this.diaSemana,
+    this.generada = false,
     required this.ejercicios,
   });
 
@@ -294,6 +299,7 @@ class RutinaDetalle {
     nombre: json['nombre'] as String,
     descripcion: json['descripcion'] as String?,
     diaSemana: json['dia_semana'] as int?,
+    generada: json['generada'] as bool? ?? false,
     ejercicios: (json['ejercicios'] as List)
         .map((e) => EjercicioRutina.fromJson(e as Map<String, dynamic>))
         .toList(),
@@ -582,4 +588,206 @@ class Progreso {
       topeVolumenSerie: _aDouble(reglas['tope_volumen_serie']),
     );
   }
+}
+
+// =====================================================================
+//  Rutina personalizada por objetivo
+// =====================================================================
+class ObjetivoEntrenamiento {
+  final String codigo; // fuerza, hipertrofia, hibrido, salud
+  final String nombre;
+  final String descripcion;
+  final String indicaciones;
+
+  /// Sesiones según los días por semana. Ej: 3 -> [Empuje, Tirón, Pierna A]
+  final Map<int, List<String>> divisiones;
+
+  ObjetivoEntrenamiento({
+    required this.codigo,
+    required this.nombre,
+    required this.descripcion,
+    required this.indicaciones,
+    required this.divisiones,
+  });
+
+  factory ObjetivoEntrenamiento.fromJson(Map<String, dynamic> json) {
+    final crudo = json['divisiones'];
+    final divisiones = <int, List<String>>{};
+    if (crudo is Map) {
+      crudo.forEach((dias, sesiones) {
+        divisiones[int.parse(dias.toString())] =
+            (sesiones as List).map((s) => s as String).toList();
+      });
+    }
+    return ObjetivoEntrenamiento(
+      codigo: json['codigo'] as String,
+      nombre: json['nombre'] as String,
+      descripcion: json['descripcion'] as String,
+      indicaciones: json['indicaciones'] as String,
+      divisiones: divisiones,
+    );
+  }
+}
+
+class OpcionesRutinaPersonalizada {
+  final bool esPremium;
+  final int diasMin;
+  final int diasMax;
+  final List<ObjetivoEntrenamiento> objetivos;
+  final String? objetivoActual; // lo que eligió la última vez (o null)
+  final List<int> diasActuales;
+
+  OpcionesRutinaPersonalizada({
+    required this.esPremium,
+    required this.diasMin,
+    required this.diasMax,
+    required this.objetivos,
+    this.objetivoActual,
+    this.diasActuales = const [],
+  });
+
+  factory OpcionesRutinaPersonalizada.fromJson(Map<String, dynamic> json) {
+    final perfil = json['perfil'] as Map<String, dynamic>?;
+    return OpcionesRutinaPersonalizada(
+      esPremium: json['es_premium'] as bool,
+      diasMin: json['dias_min'] as int,
+      diasMax: json['dias_max'] as int,
+      objetivos: (json['objetivos'] as List)
+          .map((o) => ObjetivoEntrenamiento.fromJson(o as Map<String, dynamic>))
+          .toList(),
+      objetivoActual: perfil?['objetivo'] as String?,
+      diasActuales: perfil == null
+          ? const []
+          : (perfil['dias'] as List).map((d) => d as int).toList(),
+    );
+  }
+}
+
+// =====================================================================
+//  Avatar
+// =====================================================================
+class AvatarConfig {
+  final String genero; // 'masculino' o 'femenino'
+  final int piel; // índice en pielesAvatar
+  final int peinado; // 0 corto, 1 rapado, 2 largo, 3 moño
+  final int colorPelo;
+  final int colorRopa;
+
+  const AvatarConfig({
+    this.genero = 'masculino',
+    this.piel = 1,
+    this.peinado = 0,
+    this.colorPelo = 0,
+    this.colorRopa = 0,
+  });
+
+  AvatarConfig copyWith({
+    String? genero,
+    int? piel,
+    int? peinado,
+    int? colorPelo,
+    int? colorRopa,
+  }) => AvatarConfig(
+    genero: genero ?? this.genero,
+    piel: piel ?? this.piel,
+    peinado: peinado ?? this.peinado,
+    colorPelo: colorPelo ?? this.colorPelo,
+    colorRopa: colorRopa ?? this.colorRopa,
+  );
+
+  factory AvatarConfig.fromJson(Map<String, dynamic> json) => AvatarConfig(
+    genero: json['genero'] as String,
+    piel: json['piel'] as int,
+    peinado: json['peinado'] as int,
+    colorPelo: json['color_pelo'] as int,
+    colorRopa: json['color_ropa'] as int,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'genero': genero,
+    'piel': piel,
+    'peinado': peinado,
+    'color_pelo': colorPelo,
+    'color_ropa': colorRopa,
+  };
+}
+
+/// Respuesta de avatar/obtener.php
+class DatosAvatar {
+  final bool esPremium;
+  final AvatarConfig? avatar; // null = todavía no lo crea
+  final InfoNivel nivel;
+
+  DatosAvatar({required this.esPremium, this.avatar, required this.nivel});
+
+  factory DatosAvatar.fromJson(Map<String, dynamic> json) => DatosAvatar(
+    esPremium: json['es_premium'] as bool,
+    avatar: json['avatar'] == null
+        ? null
+        : AvatarConfig.fromJson(json['avatar'] as Map<String, dynamic>),
+    nivel: InfoNivel.fromJson(json['nivel'] as Map<String, dynamic>),
+  );
+}
+
+// =====================================================================
+//  Chatbot de ejercicios
+// =====================================================================
+class MensajeChat {
+  final int id;
+  final bool esBot;
+  final String texto;
+  final DateTime fecha;
+
+  MensajeChat({
+    required this.id,
+    required this.esBot,
+    required this.texto,
+    required this.fecha,
+  });
+
+  factory MensajeChat.fromJson(Map<String, dynamic> json) => MensajeChat(
+    id: json['id'] as int,
+    esBot: json['rol'] == 'bot',
+    texto: json['texto'] as String,
+    fecha: DateTime.parse(json['creado_en'] as String),
+  );
+}
+
+class ConversacionChat {
+  final bool esPremium;
+  final List<MensajeChat> mensajes;
+  final List<String> sugerencias;
+
+  ConversacionChat({
+    required this.esPremium,
+    required this.mensajes,
+    required this.sugerencias,
+  });
+
+  factory ConversacionChat.fromJson(Map<String, dynamic> json) => ConversacionChat(
+    esPremium: json['es_premium'] as bool,
+    mensajes: (json['mensajes'] as List)
+        .map((m) => MensajeChat.fromJson(m as Map<String, dynamic>))
+        .toList(),
+    sugerencias: (json['sugerencias'] as List).map((s) => s as String).toList(),
+  );
+}
+
+/// Lo que responde chatbot/preguntar.php
+class RespuestaChat {
+  final MensajeChat pregunta;
+  final MensajeChat respuesta;
+  final List<String> sugerencias;
+
+  RespuestaChat({
+    required this.pregunta,
+    required this.respuesta,
+    required this.sugerencias,
+  });
+
+  factory RespuestaChat.fromJson(Map<String, dynamic> json) => RespuestaChat(
+    pregunta: MensajeChat.fromJson(json['pregunta'] as Map<String, dynamic>),
+    respuesta: MensajeChat.fromJson(json['respuesta'] as Map<String, dynamic>),
+    sugerencias: (json['sugerencias'] as List).map((s) => s as String).toList(),
+  );
 }

@@ -265,6 +265,22 @@ class ApiService {
     });
   }
 
+  /// Objetivos disponibles y lo que el usuario eligió la última vez.
+  Future<OpcionesRutinaPersonalizada> opcionesRutinaPersonalizada() async {
+    final datos = await _get('rutinas/personalizada.php');
+    return OpcionesRutinaPersonalizada.fromJson(datos);
+  }
+
+  /// Crea las rutinas del objetivo para los días elegidos (1 = lunes ... 7 = domingo).
+  /// Reemplaza las rutinas generadas antes; las creadas a mano no se tocan.
+  Future<String> generarRutinaPersonalizada(String objetivo, List<int> dias) async {
+    final datos = await _post('rutinas/generar.php', {
+      'objetivo': objetivo,
+      'dias': dias,
+    });
+    return datos['mensaje'] as String;
+  }
+
   /// diaSemana: 1 = lunes ... 7 = domingo, null = sin día.
   Future<String> asignarDiaRutina(int rutinaId, int? diaSemana) async {
     final datos = await _post('rutinas/asignar_dia.php', {
@@ -312,6 +328,34 @@ class ApiService {
   }
 
   // ------------------------------------------------------------------
+  //  Avatar
+  // ------------------------------------------------------------------
+  Future<DatosAvatar> avatar() async {
+    return DatosAvatar.fromJson(await _get('avatar/obtener.php'));
+  }
+
+  Future<String> guardarAvatar(AvatarConfig avatar) async {
+    final datos = await _post('avatar/guardar.php', avatar.toJson());
+    return datos['mensaje'] as String;
+  }
+
+  // ------------------------------------------------------------------
+  //  Chatbot de ejercicios
+  // ------------------------------------------------------------------
+  Future<ConversacionChat> historialChat() async {
+    return ConversacionChat.fromJson(await _get('chatbot/historial.php'));
+  }
+
+  Future<RespuestaChat> preguntarChatbot(String mensaje) async {
+    final datos = await _post('chatbot/preguntar.php', {'mensaje': mensaje});
+    return RespuestaChat.fromJson(datos);
+  }
+
+  Future<void> borrarChat() async {
+    await _post('chatbot/borrar.php');
+  }
+
+  // ------------------------------------------------------------------
   //  Gimnasios
   // ------------------------------------------------------------------
   Future<List<Gimnasio>> listarGimnasios() async {
@@ -337,7 +381,7 @@ class ApiService {
     final datos = await _post('admin/activar_premium.php', {
       'email': email,
       'meses': meses,
-      if (gimnasioId != null) 'gimnasio_id': gimnasioId,
+      'gimnasio_id': ?gimnasioId,
     });
     return datos['mensaje'] as String;
   }
@@ -345,7 +389,7 @@ class ApiService {
   Future<String> quitarPremiumCliente(int usuarioId, {int? gimnasioId}) async {
     final datos = await _post('admin/quitar_premium.php', {
       'usuario_id': usuarioId,
-      if (gimnasioId != null) 'gimnasio_id': gimnasioId,
+      'gimnasio_id': ?gimnasioId,
     });
     return datos['mensaje'] as String;
   }

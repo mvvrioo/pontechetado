@@ -4,7 +4,9 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import '../widgets/avatar.dart';
 import '../widgets/nivel.dart';
+import 'avatar_screen.dart';
 
 /// Gamificación: nivel, XP, semana actual e historial de días entrenados.
 class ProgresoScreen extends StatefulWidget {
@@ -17,6 +19,7 @@ class ProgresoScreen extends StatefulWidget {
 class _ProgresoScreenState extends State<ProgresoScreen> {
   final _api = ApiService.instance;
   Progreso? _progreso;
+  AvatarConfig? _avatar;
   bool _cargando = true;
   Object? _error;
 
@@ -33,10 +36,11 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
       _error = null;
     });
     try {
-      final progreso = await _api.progreso();
+      final resultados = await Future.wait([_api.progreso(), _api.avatar()]);
       if (!mounted) return;
       setState(() {
-        _progreso = progreso;
+        _progreso = resultados[0] as Progreso;
+        _avatar = (resultados[1] as DatosAvatar).avatar;
         _cargando = false;
       });
     } catch (e) {
@@ -68,7 +72,17 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
         children: p.bloqueado
             ? [_TarjetaBloqueada(progreso: p), _ComoGanarXp(progreso: p)]
             : [
-                _TarjetaNivel(nivel: p.nivel),
+                _TarjetaNivel(
+                  nivel: p.nivel,
+                  avatar: _avatar,
+                  alTocarAvatar: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AvatarScreen()),
+                    );
+                    _cargar();
+                  },
+                ),
                 _FilaEstadisticas(progreso: p),
                 _TarjetaSemana(progreso: p),
                 const SizedBox(height: 8),
@@ -79,7 +93,7 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
                       padding: EdgeInsets.all(24),
                       child: Text(
                         'Todavía no registras entrenos.\n'
-                        'Ve a "Entrenar", agrega tus series y empieza a sumar XP 💪',
+                        'Ve a "Entrenar", agrega tus series y empieza a sumar XP.',
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -112,8 +126,10 @@ class _Titulo extends StatelessWidget {
 
 class _TarjetaNivel extends StatelessWidget {
   final InfoNivel nivel;
+  final AvatarConfig? avatar; // null = todavía no crea su avatar
+  final VoidCallback alTocarAvatar;
 
-  const _TarjetaNivel({required this.nivel});
+  const _TarjetaNivel({required this.nivel, this.avatar, required this.alTocarAvatar});
 
   @override
   Widget build(BuildContext context) {
@@ -133,14 +149,25 @@ class _TarjetaNivel extends StatelessWidget {
         children: [
           Row(
             children: [
-              InsigniaNivel(nivel: nivel),
+              GestureDetector(
+                onTap: alTocarAvatar,
+                child: avatar == null
+                    ? InsigniaNivel(nivel: nivel)
+                    : AvatarDibujo(
+                        config: avatar!,
+                        tramo: tramoAvatar(nivel.nivel),
+                        ancho: 72,
+                      ),
+              ),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      nivel.titulo.toUpperCase(),
+                      avatar == null
+                          ? nivel.titulo.toUpperCase()
+                          : 'NIVEL ${nivel.nivel} · ${nivel.titulo.toUpperCase()}',
                       style: const TextStyle(
                         color: Colores.marca,
                         fontWeight: FontWeight.w900,
@@ -370,6 +397,13 @@ class _CirculoDia extends StatelessWidget {
 }
 
 /// "DÍA 12 · Lunes 19/10 · Pecho y espalda · 4.800 kg · +46 XP"
+/// "Espalda, Pecho y Piernas" en vez de "Espalda y Pecho y Piernas".
+String _unirGrupos(List<String> grupos) {
+  if (grupos.isEmpty) return 'Entrenamiento';
+  if (grupos.length == 1) return grupos.first;
+  return '${grupos.sublist(0, grupos.length - 1).join(', ')} y ${grupos.last}';
+}
+
 class _TarjetaDiaEntrenado extends StatelessWidget {
   final DiaEntrenado dia;
 
@@ -377,8 +411,7 @@ class _TarjetaDiaEntrenado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titulo = dia.rutina ??
-        (dia.grupos.isEmpty ? 'Entrenamiento' : dia.grupos.join(' y '));
+    final titulo = dia.rutina ?? _unirGrupos(dia.grupos);
 
     return Card(
       child: Padding(

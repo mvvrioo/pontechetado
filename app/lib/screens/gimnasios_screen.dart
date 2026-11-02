@@ -169,6 +169,12 @@ class _TarjetaMembresia extends StatelessWidget {
       detalle = usuario.premiumHasta == null
           ? 'Disfruta todas las funciones'
           : 'Vence el ${formatearFecha(usuario.premiumHasta!)}. Para renovar, paga tu membresía en recepción.';
+    } else if (usuario.esPremium) {
+      // Premium sin gimnasio (código de prueba o superadmin)
+      titulo = 'Premium activo';
+      detalle = usuario.premiumHasta == null
+          ? 'Disfruta todas las funciones'
+          : 'Vence el ${formatearFecha(usuario.premiumHasta!)}. Para renovarlo, paga la membresía en uno de estos gimnasios.';
     } else if (tieneGimnasio) {
       titulo = 'Tu Premium en ${usuario.gimnasioNombre} venció';
       detalle = 'Renueva tu membresía en el gimnasio y pide que la activen con tu correo:';

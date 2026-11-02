@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
 import '../widgets/nivel.dart';
+import 'chatbot_screen.dart';
 
 class EntrenarScreen extends StatefulWidget {
   const EntrenarScreen({super.key});
@@ -50,7 +51,9 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
 
       // ¿Qué rutina toca este día de la semana? (lunes = 1 ... domingo = 7)
       final (rutinas, _) = resultados[4] as (List<Rutina>, int?);
-      final delDia = rutinas.where((r) => r.diaSemana == _fecha.weekday);
+      // Si hay varias ese día, primero la rutina personalizada (generada)
+      final delDia = rutinas.where((r) => r.diaSemana == _fecha.weekday).toList()
+        ..sort((a, b) => (b.generada ? 1 : 0) - (a.generada ? 1 : 0));
       final rutinaDelDia = delDia.isEmpty
           ? null
           : await _api.detalleRutina(delDia.first.id);
@@ -299,8 +302,8 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
       mostrarMensaje(
         context,
         xp == null || xp.ganada <= 0
-            ? 'Serie registrada ✅'
-            : 'Serie registrada ✅   +${xp.ganada} XP',
+            ? 'Serie registrada'
+            : 'Serie registrada · +${xp.ganada} XP',
       );
       await _cargarTodo();
       if (!mounted) return;
@@ -401,6 +404,14 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
       appBar: AppBar(
         title: const Text('Entrenar'),
         actions: [
+          IconButton(
+            tooltip: 'Asistente de ejercicios',
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+            ),
+          ),
           if (_progreso != null && !_progreso!.bloqueado)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -773,8 +784,9 @@ class _GraficoVolumen extends StatelessWidget {
                   showTitles: true,
                   reservedSize: 22,
                   getTitlesWidget: (value, meta) {
-                    if (value < 0 || value >= volumen.length)
+                    if (value < 0 || value >= volumen.length) {
                       return const SizedBox();
+                    }
                     final dia = volumen[value.toInt()].fecha;
                     return Text('${dia.day}');
                   },

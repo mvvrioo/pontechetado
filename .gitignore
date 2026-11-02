@@ -3,3 +3,7 @@ backend/config/db.php
 # Respaldos comprimidos (pesan mucho)
 *.rar
 *.zip
+
+# Docker: contrasenas locales y respaldo de la base con datos de prueba
+.env
+base_de_datos/docker-init/*.sql

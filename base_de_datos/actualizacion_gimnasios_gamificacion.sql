@@ -1,6 +1,6 @@
 -- =====================================================================
 --  PonteChetado - Actualización: Gimnasios + Gamificación
---  Ejecutar UNA sola vez en MySQL Workbench (botón del rayo ⚡).
+--  Ejecutar UNA sola vez en MySQL Workbench (botón del rayo).
 --
 --  Agrega:
 --    1. Tabla de gimnasios asociados (Marfit y Energy de partida).
@@ -66,12 +66,11 @@ CREATE TABLE IF NOT EXISTS historial_premium (
     KEY idx_historial_gimnasio (gimnasio_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- Para que el cálculo de XP sea rápido
-CREATE INDEX idx_series_usuario_fecha ON series_entrenamiento (usuario_id, fecha);
+-- (El índice idx_series_usuario_fecha en series_entrenamiento ya existía en tu base.)
 
 -- ---------------------------------------------------------------------
 -- 6. Tu cuenta pasa a ser SUPERADMIN
---    👉 Si tu cuenta usa otro correo, cámbialo aquí antes de ejecutar.
+--    Si tu cuenta usa otro correo, cámbialo aquí antes de ejecutar.
 -- ---------------------------------------------------------------------
 UPDATE usuarios SET rol = 'superadmin' WHERE email = 'marij.torres@duocuc.cl';
 

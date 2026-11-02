@@ -1,0 +1,9 @@
+Aquí va el respaldo de la base de datos para Docker.
+
+Exporta tu base "pontechetado" desde MySQL Workbench (Server > Data Export,
+"Export to Self-Contained File") y guárdala en esta carpeta con el nombre:
+
+    01_pontechetado.sql
+
+La primera vez que ejecutes "docker compose up", MySQL la carga solo.
+Los .sql de esta carpeta no se suben a GitHub (tienen cuentas de prueba).

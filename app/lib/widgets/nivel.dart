@@ -133,7 +133,7 @@ Future<void> mostrarSubidaDeNivel(BuildContext context, InfoNivel nivel) {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('🏆', style: TextStyle(fontSize: 48)),
+          const Icon(Icons.emoji_events, size: 56, color: Colores.marca),
           const SizedBox(height: 8),
           const Text(
             '¡SUBISTE DE NIVEL!',
@@ -156,7 +156,7 @@ Future<void> mostrarSubidaDeNivel(BuildContext context, InfoNivel nivel) {
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('¡Vamos! 💪'),
+          child: const Text('¡Vamos!'),
         ),
       ],
     ),

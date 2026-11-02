@@ -39,6 +39,38 @@ const LIMITE_RUTINAS_GRATIS = 3;
 const LIMITE_EJERCICIOS_POR_RUTINA_GRATIS = 6;
 const DIAS_SESION = 30;
 
+// ---------- Rutinas personalizadas: cuántos días por semana se pueden elegir ----------
+const DIAS_RUTINA_MIN = 2;
+const DIAS_RUTINA_MAX = 6;
+
+// ---------- Avatar: cantidad de opciones de cada paleta (igual que en la app) ----------
+const AVATAR_PIELES   = 5;
+const AVATAR_PEINADOS = 4;
+const AVATAR_PELOS    = 6;
+const AVATAR_ROPAS    = 6;
+
+// Hasta 4 preguntas de ejemplo al azar para mostrar como botones en el chat
+function sugerencias_chatbot(mysqli $conn, string $excluirTema = ''): array
+{
+    $stmt = $conn->prepare(
+        "SELECT ejemplo FROM chatbot_respuestas
+          WHERE ejemplo IS NOT NULL AND tema <> ?
+          ORDER BY RAND() LIMIT 4"
+    );
+    $stmt->bind_param("s", $excluirTema);
+    $stmt->execute();
+    return array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'ejemplo');
+}
+
+// Palabras sin tilde y en minúscula, para comparar textos del chatbot
+function normalizar_texto(string $t): string
+{
+    $t = mb_strtolower($t, 'UTF-8');
+    $t = strtr($t, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
+    $t = preg_replace('/[^a-z0-9 ]+/', ' ', $t);
+    return trim(preg_replace('/\s+/', ' ', $t));
+}
+
 // Columnas del usuario que usan login, perfil, etc. (u = usuarios, g = gimnasios)
 const CAMPOS_USUARIO = "u.id, u.nombre, u.email, u.premium_hasta, u.rol, u.gimnasio_id, g.nombre AS gimnasio_nombre";
 
@@ -163,7 +195,7 @@ function crear_token(mysqli $conn, int $usuario_id): string
 // Busca una rutina y verifica que sea del usuario. Si no, corta con 404.
 function rutina_del_usuario(mysqli $conn, int $rutina_id, int $usuario_id): array
 {
-    $stmt = $conn->prepare("SELECT id, nombre, descripcion, dia_semana, creado_en FROM rutinas WHERE id = ? AND usuario_id = ?");
+    $stmt = $conn->prepare("SELECT id, nombre, descripcion, dia_semana, generada, creado_en FROM rutinas WHERE id = ? AND usuario_id = ?");
     $stmt->bind_param("ii", $rutina_id, $usuario_id);
     $stmt->execute();
     $rutina = $stmt->get_result()->fetch_assoc();

@@ -56,7 +56,7 @@ class _PesoScreenState extends State<PesoScreen> {
     try {
       await _api.agregarPeso(nuevo.pesoKg, nuevo.fecha, nuevo.nota);
       if (!mounted) return;
-      mostrarMensaje(context, 'Peso registrado 💪');
+      mostrarMensaje(context, 'Peso registrado');
       _cargar();
     } catch (e) {
       if (!mounted) return;

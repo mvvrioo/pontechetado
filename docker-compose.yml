@@ -1,0 +1,50 @@
+# =====================================================================
+#  PonteChetado con Docker
+#  Levanta el backend (PHP + Apache) y la base de datos (MySQL 8)
+#  con un solo comando:   docker compose up -d --build
+#
+#  - API:    http://localhost:8080/PonteChetado/api
+#  - MySQL:  localhost:3308 (por si quieres verla desde Workbench)
+#  Usa puertos distintos a XAMPP (80 y 3306/3307), así no chocan.
+# =====================================================================
+services:
+  db:
+    image: mysql:8.0
+    container_name: pontechetado-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: pontechetado
+      TZ: America/Santiago
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3308:3306"
+    volumes:
+      # Los .sql de esta carpeta se ejecutan solos la PRIMERA vez que se crea la base
+      - ./base_de_datos/docker-init:/docker-entrypoint-initdb.d:ro
+      # Los datos quedan guardados aunque apagues el contenedor
+      - datos_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: ./backend
+    container_name: pontechetado-api
+    restart: unless-stopped
+    environment:
+      DB_HOST: db          # nombre del servicio de MySQL dentro de Docker
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: pontechetado
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  datos_mysql:

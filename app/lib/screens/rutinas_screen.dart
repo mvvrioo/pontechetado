@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
 import 'rutina_detalle_screen.dart';
+import 'rutina_personalizada_screen.dart';
 
 /// Rutinas organizadas por día de la semana (lunes: pecho y espalda, etc.).
 class RutinasScreen extends StatefulWidget {
@@ -117,6 +118,14 @@ class _RutinasScreenState extends State<RutinasScreen> {
     }
   }
 
+  Future<void> _abrirPersonalizada() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const RutinaPersonalizadaScreen()),
+    );
+    _cargar(); // al volver, mostrar las rutinas nuevas
+  }
+
   Future<void> _abrir(Rutina r) async {
     await Navigator.push(
       context,
@@ -160,6 +169,10 @@ class _RutinasScreenState extends State<RutinasScreen> {
                 label: Text('Plan gratis: ${_rutinas.length} de $_limite rutinas'),
               ),
             ),
+          _TarjetaPersonalizada(
+            tieneRutina: _rutinas.any((r) => r.generada),
+            alTocar: _abrirPersonalizada,
+          ),
           // Lunes a domingo, siempre visibles para armar la semana
           for (var dia = 1; dia <= 7; dia++)
             _SeccionDia(
@@ -196,7 +209,10 @@ class _RutinasScreenState extends State<RutinasScreen> {
         title: Text(r.nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
           [
-            if (r.descripcion != null && r.descripcion!.isNotEmpty) r.descripcion!,
+            if (r.generada)
+              'Personalizada'
+            else if (r.descripcion != null && r.descripcion!.isNotEmpty)
+              r.descripcion!,
             '${r.totalEjercicios} ejercicio${r.totalEjercicios == 1 ? '' : 's'}',
           ].join(' · '),
         ),
@@ -211,6 +227,43 @@ class _RutinasScreenState extends State<RutinasScreen> {
             PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Acceso a "Rutina personalizada" (elegir objetivo y días).
+class _TarjetaPersonalizada extends StatelessWidget {
+  final bool tieneRutina;
+  final VoidCallback alTocar;
+
+  const _TarjetaPersonalizada({required this.tieneRutina, required this.alTocar});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      color: Colores.marca,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: const Icon(Icons.auto_awesome, color: Colors.black, size: 30),
+        title: Text(
+          tieneRutina ? 'Tu rutina personalizada' : 'Arma tu rutina personalizada',
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Text(
+          tieneRutina
+              ? 'Toca para cambiar tu objetivo o tus días'
+              : 'Elige fuerza, hipertrofia, híbrido o salud y tus días, y te armamos la semana',
+          style: const TextStyle(color: Colors.black87),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.black),
+        onTap: alTocar,
       ),
     );
   }

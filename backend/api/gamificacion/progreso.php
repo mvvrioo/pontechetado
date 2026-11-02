@@ -26,7 +26,7 @@ foreach ($dias as $fecha => $dia) {
 $stmt = $conn->prepare(
     "SELECT dia_semana, nombre FROM rutinas
       WHERE usuario_id = ? AND dia_semana IS NOT NULL
-      ORDER BY creado_en ASC"
+      ORDER BY generada DESC, creado_en ASC"
 );
 $stmt->bind_param("i", $uid);
 $stmt->execute();

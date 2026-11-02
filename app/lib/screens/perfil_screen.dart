@@ -4,7 +4,10 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import '../widgets/avatar.dart';
 import '../widgets/nivel.dart';
+import 'avatar_screen.dart';
+import 'chatbot_screen.dart';
 import 'login_screen.dart';
 import 'panel_gimnasio_screen.dart';
 import 'superadmin_screen.dart';
@@ -22,6 +25,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Usuario? _usuario;
   Plan? _plan;
   Progreso? _progreso;
+  AvatarConfig? _avatar;
   bool _cargando = true;
   bool _activando = false;
   Object? _error;
@@ -45,13 +49,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
       _error = null;
     });
     try {
-      final resultados = await Future.wait([_api.perfil(), _api.progreso()]);
+      final resultados = await Future.wait([
+        _api.perfil(),
+        _api.progreso(),
+        _api.avatar(),
+      ]);
       final (usuario, plan) = resultados[0] as (Usuario, Plan);
       if (!mounted) return;
       setState(() {
         _usuario = usuario;
         _plan = plan;
         _progreso = resultados[1] as Progreso;
+        _avatar = (resultados[2] as DatosAvatar).avatar;
         _cargando = false;
       });
     } catch (e) {
@@ -141,7 +150,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
               padding: const EdgeInsets.all(18),
               child: Row(
                 children: [
-                  if (progreso != null && !progreso.bloqueado)
+                  if (_avatar != null && progreso != null && !progreso.bloqueado)
+                    GestureDetector(
+                      onTap: () => _abrir(const AvatarScreen()),
+                      child: AvatarDibujo(
+                        config: _avatar!,
+                        tramo: tramoAvatar(progreso.nivel.nivel),
+                        ancho: 64,
+                      ),
+                    )
+                  else if (progreso != null && !progreso.bloqueado)
                     InsigniaNivel(nivel: progreso.nivel, tamano: 72)
                   else
                     CircleAvatar(
@@ -191,6 +209,33 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          // ---- Avatar y asistente ----
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.face_retouching_natural, color: Colores.marca),
+                  title: const Text('Mi avatar'),
+                  subtitle: Text(
+                    _avatar == null
+                        ? 'Créalo y míralo evolucionar al subir de nivel'
+                        : 'Personaliza tu avatar y mira su evolución',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _abrir(const AvatarScreen()),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.smart_toy_outlined, color: Colores.marca),
+                  title: const Text('Asistente de ejercicios'),
+                  subtitle: const Text('Dudas de técnica, series, descanso y más'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _abrir(const ChatbotScreen()),
+                ),
+              ],
             ),
           ),
 
@@ -261,8 +306,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     const SizedBox(height: 8),
                     const _Beneficio('Rutinas ilimitadas'),
                     const _Beneficio('Ejercicios ilimitados por rutina'),
-                    const _Beneficio('Ejercicios exclusivos 🔒'),
-                    const _Beneficio('Niveles, XP y tu historial de entrenos 🏆'),
+                    const _Beneficio('Ejercicios exclusivos'),
+                    const _Beneficio('Niveles, XP y tu historial de entrenos'),
                     const SizedBox(height: 12),
                     const Text(
                       'Se activa en tu gimnasio: paga la membresía y dales tu correo '

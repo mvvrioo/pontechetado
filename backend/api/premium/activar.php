@@ -48,6 +48,6 @@ $conn->commit();
 
 // Devolver el usuario actualizado
 responder([
-    "mensaje" => "¡Premium activado por $dias días! 💪",
+    "mensaje" => "¡Premium activado por $dias días!",
     "usuario" => usuario_publico(buscar_usuario($conn, $usuario['id'])),
 ]);

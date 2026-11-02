@@ -267,7 +267,7 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'Todavía no hay miembros.\nActiva el primero con su correo 👆',
+                  'Todavía no hay miembros.\nActiva el primero con su correo.',
                   textAlign: TextAlign.center,
                 ),
               ),

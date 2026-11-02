@@ -80,7 +80,7 @@ $actualizado = buscar_usuario($conn, $id_cliente);
 $hasta = date('d/m/Y', strtotime($actualizado['premium_hasta']));
 
 responder([
-    "mensaje" => "Premium activado para {$actualizado['nombre']} hasta el $hasta ✅",
+    "mensaje" => "Premium activado para {$actualizado['nombre']} hasta el $hasta",
     "miembro" => [
         "id"            => $id_cliente,
         "nombre"        => $actualizado['nombre'],
