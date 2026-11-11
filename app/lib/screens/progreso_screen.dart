@@ -7,6 +7,8 @@ import '../utils.dart';
 import '../widgets/avatar.dart';
 import '../widgets/nivel.dart';
 import 'avatar_screen.dart';
+import 'evolucion_screen.dart';
+import 'ranking_screen.dart';
 
 /// Gamificación: nivel, XP, semana actual e historial de días entrenados.
 class ProgresoScreen extends StatefulWidget {
@@ -85,6 +87,36 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
                 ),
                 _FilaEstadisticas(progreso: p),
                 _TarjetaSemana(progreso: p),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.leaderboard, color: Colores.premium),
+                    title: const Text(
+                      'Ranking de mi gimnasio',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: const Text('Top 10 de los más fuertes y tu puesto'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RankingScreen()),
+                    ),
+                  ),
+                ),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.show_chart, color: Colores.marca),
+                    title: const Text(
+                      'Evolución por ejercicio',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: const Text('Cómo han subido tus pesos en cada ejercicio'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EvolucionScreen()),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 const _Titulo('Historial de entrenos'),
                 if (p.historial.isEmpty)

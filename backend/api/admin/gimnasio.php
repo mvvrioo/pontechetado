@@ -1,7 +1,8 @@
 <?php
 // GET /api/admin/gimnasio.php   (requiere token de admin de gimnasio o superadmin)
 //     El superadmin agrega ?gimnasio_id=2 para ver cualquier gimnasio.
-// Devuelve los datos del gimnasio y sus miembros (Premium activos primero).
+// Devuelve los datos del gimnasio, sus miembros (Premium activos primero)
+// y sus entrenadores.
 require_once __DIR__ . '/../../config/helpers.php';
 requerir_metodo('GET');
 
@@ -33,6 +34,22 @@ while ($fila = $resultado->fetch_assoc()) {
     ];
 }
 
+// Entrenadores del gimnasio (reciben las solicitudes de ayuda)
+$stmt = $conn->prepare(
+    "SELECT id, nombre, email FROM usuarios WHERE gimnasio_id = ? AND rol = 'entrenador' ORDER BY nombre"
+);
+$stmt->bind_param("i", $gimnasio['id']);
+$stmt->execute();
+$entrenadores = [];
+foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $e) {
+    $entrenadores[] = ["id" => (int)$e['id'], "nombre" => $e['nombre'], "email" => $e['email']];
+}
+
+$stmt = $conn->prepare("SELECT COUNT(*) FROM solicitudes_ayuda WHERE gimnasio_id = ? AND estado = 'pendiente'");
+$stmt->bind_param("i", $gimnasio['id']);
+$stmt->execute();
+$ayuda_pendiente = (int)$stmt->get_result()->fetch_row()[0];
+
 responder([
     "gimnasio" => [
         "id"               => $gimnasio['id'],
@@ -41,5 +58,7 @@ responder([
         "miembros_premium" => $activos,
     ],
     "miembros"        => $miembros,
+    "entrenadores"    => $entrenadores,
+    "ayuda_pendiente" => $ayuda_pendiente,
     "meses_permitidos" => MESES_PREMIUM_PERMITIDOS,
 ]);

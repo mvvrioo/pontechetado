@@ -4,6 +4,7 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import 'ayuda_screen.dart';
 
 /// Asistente de ejercicios: responde dudas de técnica y entrenamiento con
 /// respuestas predefinidas (no usa IA). La conversación queda guardada.
@@ -23,6 +24,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   bool _esPremium = false;
   bool _cargando = true;
   bool _escribiendo = false; // el bot está "escribiendo"
+  bool _ofrecerAyuda = false; // el bot no supo responder: ofrecer un entrenador
   Object? _error;
 
   @override
@@ -102,6 +104,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ..add(r.pregunta)
           ..add(r.respuesta);
         _sugerencias = r.sugerencias;
+        _ofrecerAyuda = !r.entendida;
       });
     } catch (e) {
       if (!mounted) return;
@@ -191,6 +194,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               ),
               for (final m in _mensajes) _Burbuja(esBot: m.esBot, texto: m.texto),
               if (_escribiendo) const _Burbuja(esBot: true, texto: 'Escribiendo...', suave: true),
+              if (_ofrecerAyuda && !_escribiendo)
+                Padding(
+                  padding: const EdgeInsets.only(left: 38, bottom: 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AyudaScreen()),
+                      ),
+                      icon: const Icon(Icons.support_agent, size: 18),
+                      label: const Text('Pedir ayuda a un entrenador'),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

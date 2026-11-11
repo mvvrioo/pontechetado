@@ -3,7 +3,7 @@
 double _aDouble(dynamic v) => (v as num).toDouble();
 double? _aDoubleONull(dynamic v) => v == null ? null : (v as num).toDouble();
 
-/// Roles: 'usuario' (cliente), 'admin_gimnasio' o 'superadmin' (equipo PonteChetado).
+/// Roles: 'usuario' (cliente), 'entrenador', 'admin_gimnasio' o 'superadmin' (equipo PonteChetado).
 class Usuario {
   final int id;
   final String nombre;
@@ -26,6 +26,13 @@ class Usuario {
   });
 
   bool get esAdminGimnasio => rol == 'admin_gimnasio';
+  bool get esEntrenador => rol == 'entrenador';
+
+  /// Socio normal del gimnasio (no es parte del personal).
+  bool get esCliente => rol == 'usuario';
+
+  /// Entrenadores y admins reciben las solicitudes de ayuda.
+  bool get esPersonalGimnasio => esEntrenador || esAdminGimnasio;
   bool get esSuperadmin => rol == 'superadmin';
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -384,11 +391,15 @@ class PanelGimnasio {
   final Gimnasio gimnasio;
   final List<MiembroGimnasio> miembros;
   final List<int> mesesPermitidos;
+  final List<AdminGimnasio> entrenadores;
+  final int ayudaPendiente;
 
   PanelGimnasio({
     required this.gimnasio,
     required this.miembros,
     required this.mesesPermitidos,
+    this.entrenadores = const [],
+    this.ayudaPendiente = 0,
   });
 
   factory PanelGimnasio.fromJson(Map<String, dynamic> json) => PanelGimnasio(
@@ -399,6 +410,10 @@ class PanelGimnasio {
     mesesPermitidos: (json['meses_permitidos'] as List)
         .map((m) => m as int)
         .toList(),
+    entrenadores: ((json['entrenadores'] as List?) ?? [])
+        .map((e) => AdminGimnasio.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    ayudaPendiente: json['ayuda_pendiente'] as int? ?? 0,
   );
 }
 
@@ -778,16 +793,342 @@ class RespuestaChat {
   final MensajeChat pregunta;
   final MensajeChat respuesta;
   final List<String> sugerencias;
+  final bool entendida; // false = el chatbot no tenía respuesta para eso
 
   RespuestaChat({
     required this.pregunta,
     required this.respuesta,
     required this.sugerencias,
+    this.entendida = true,
   });
 
   factory RespuestaChat.fromJson(Map<String, dynamic> json) => RespuestaChat(
     pregunta: MensajeChat.fromJson(json['pregunta'] as Map<String, dynamic>),
     respuesta: MensajeChat.fromJson(json['respuesta'] as Map<String, dynamic>),
     sugerencias: (json['sugerencias'] as List).map((s) => s as String).toList(),
+    entendida: json['entendida'] as bool? ?? true,
+  );
+}
+
+// =====================================================================
+//  Evolución de los pesos por ejercicio
+// =====================================================================
+class EjercicioEntrenado {
+  final int id;
+  final String nombre;
+  final String grupoMuscular;
+  final int dias;
+
+  EjercicioEntrenado({
+    required this.id,
+    required this.nombre,
+    required this.grupoMuscular,
+    required this.dias,
+  });
+
+  factory EjercicioEntrenado.fromJson(Map<String, dynamic> json) => EjercicioEntrenado(
+    id: json['id'] as int,
+    nombre: json['nombre'] as String,
+    grupoMuscular: json['grupo_muscular'] as String? ?? '',
+    dias: json['dias'] as int,
+  );
+}
+
+/// Un día en que se entrenó el ejercicio.
+class PuntoEvolucion {
+  final DateTime fecha;
+  final double pesoMax;
+  final double marca; // mejor 1RM estimado del día
+  final int series;
+  final double volumen;
+
+  PuntoEvolucion({
+    required this.fecha,
+    required this.pesoMax,
+    required this.marca,
+    required this.series,
+    required this.volumen,
+  });
+
+  factory PuntoEvolucion.fromJson(Map<String, dynamic> json) => PuntoEvolucion(
+    fecha: DateTime.parse(json['fecha'] as String),
+    pesoMax: _aDouble(json['peso_max']),
+    marca: _aDouble(json['marca']),
+    series: json['series'] as int,
+    volumen: _aDouble(json['volumen']),
+  );
+}
+
+class EvolucionEjercicio {
+  final List<EjercicioEntrenado> ejercicios;
+  final int? ejercicioId;
+  final List<PuntoEvolucion> puntos;
+  final double? pesoInicial;
+  final double? pesoActual;
+  final double? mejorPeso;
+  final double? mejorMarca;
+
+  EvolucionEjercicio({
+    required this.ejercicios,
+    this.ejercicioId,
+    required this.puntos,
+    this.pesoInicial,
+    this.pesoActual,
+    this.mejorPeso,
+    this.mejorMarca,
+  });
+
+  /// Kilos ganados (o perdidos) entre el primer día y el último.
+  double get diferencia => (pesoActual ?? 0) - (pesoInicial ?? 0);
+
+  factory EvolucionEjercicio.fromJson(Map<String, dynamic> json) {
+    final r = json['resumen'] as Map<String, dynamic>?;
+    return EvolucionEjercicio(
+      ejercicios: (json['ejercicios'] as List)
+          .map((e) => EjercicioEntrenado.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      ejercicioId: json['ejercicio_id'] as int?,
+      puntos: (json['puntos'] as List)
+          .map((p) => PuntoEvolucion.fromJson(p as Map<String, dynamic>))
+          .toList(),
+      pesoInicial: _aDoubleONull(r?['peso_inicial']),
+      pesoActual: _aDoubleONull(r?['peso_actual']),
+      mejorPeso: _aDoubleONull(r?['mejor_peso']),
+      mejorMarca: _aDoubleONull(r?['mejor_marca']),
+    );
+  }
+}
+
+// =====================================================================
+//  Ranking Top 10 del gimnasio
+// =====================================================================
+class FilaRanking {
+  final int posicion;
+  final String nombre;
+  final double puntaje;
+  final double banca;
+  final double sentadilla;
+  final double pesoMuerto;
+  final int? nivel;
+  final bool esYo;
+
+  FilaRanking({
+    required this.posicion,
+    required this.nombre,
+    required this.puntaje,
+    required this.banca,
+    required this.sentadilla,
+    required this.pesoMuerto,
+    this.nivel,
+    this.esYo = false,
+  });
+
+  factory FilaRanking.fromJson(Map<String, dynamic> json) => FilaRanking(
+    posicion: json['posicion'] as int,
+    nombre: json['nombre'] as String,
+    puntaje: _aDouble(json['puntaje']),
+    banca: _aDouble(json['banca']),
+    sentadilla: _aDouble(json['sentadilla']),
+    pesoMuerto: _aDouble(json['peso_muerto']),
+    nivel: json['nivel'] as int?,
+    esYo: json['es_yo'] as bool? ?? false,
+  );
+}
+
+/// Mi lugar en el ranking. [posicion] es null si todavía no tengo marcas.
+class MiPuestoRanking {
+  final int? posicion;
+  final double puntaje;
+  final double banca;
+  final double sentadilla;
+  final double pesoMuerto;
+
+  MiPuestoRanking({
+    this.posicion,
+    required this.puntaje,
+    required this.banca,
+    required this.sentadilla,
+    required this.pesoMuerto,
+  });
+
+  factory MiPuestoRanking.fromJson(Map<String, dynamic> json) => MiPuestoRanking(
+    posicion: json['posicion'] as int?,
+    puntaje: _aDouble(json['puntaje']),
+    banca: _aDouble(json['banca']),
+    sentadilla: _aDouble(json['sentadilla']),
+    pesoMuerto: _aDouble(json['peso_muerto']),
+  );
+}
+
+class RankingGimnasio {
+  final String gimnasio;
+  final String criterio;
+  final int participantes;
+  final List<FilaRanking> top;
+  final MiPuestoRanking? yo; // null para entrenadores y admins
+
+  RankingGimnasio({
+    required this.gimnasio,
+    required this.criterio,
+    required this.participantes,
+    required this.top,
+    this.yo,
+  });
+
+  factory RankingGimnasio.fromJson(Map<String, dynamic> json) => RankingGimnasio(
+    gimnasio: (json['gimnasio'] as Map<String, dynamic>)['nombre'] as String,
+    criterio: json['criterio'] as String,
+    participantes: json['participantes'] as int,
+    top: (json['top'] as List)
+        .map((f) => FilaRanking.fromJson(f as Map<String, dynamic>))
+        .toList(),
+    yo: json['yo'] == null
+        ? null
+        : MiPuestoRanking.fromJson(json['yo'] as Map<String, dynamic>),
+  );
+}
+
+/// Resultado de recalcular el ranking al terminar el entrenamiento.
+/// [cambio]: nuevo, subio, bajo, igual, sin_marcas o no_aplica.
+class CambioRanking {
+  final bool aplica;
+  final String cambio;
+  final int? antes;
+  final int? ahora;
+  final String? mensaje;
+
+  CambioRanking({
+    required this.aplica,
+    required this.cambio,
+    this.antes,
+    this.ahora,
+    this.mensaje,
+  });
+
+  bool get subio => cambio == 'subio' || cambio == 'nuevo';
+  bool get bajo => cambio == 'bajo';
+
+  factory CambioRanking.fromJson(Map<String, dynamic> json) => CambioRanking(
+    aplica: json['aplica'] as bool? ?? false,
+    cambio: json['cambio'] as String? ?? 'no_aplica',
+    antes: json['antes'] as int?,
+    ahora: json['ahora'] as int?,
+    mensaje: json['mensaje'] as String?,
+  );
+}
+
+// =====================================================================
+//  Ayuda de un entrenador
+// =====================================================================
+class MotivoAyuda {
+  final String codigo;
+  final String texto;
+
+  MotivoAyuda({required this.codigo, required this.texto});
+
+  factory MotivoAyuda.fromJson(Map<String, dynamic> json) => MotivoAyuda(
+    codigo: json['codigo'] as String,
+    texto: json['texto'] as String,
+  );
+}
+
+class SolicitudAyuda {
+  final int id;
+  final String motivo;
+  final String motivoTexto;
+  final String? ejercicio;
+  final String? mensaje;
+  final String estado; // pendiente, atendida o cancelada
+  final DateTime creadaEn;
+  final DateTime? atendidaEn;
+  final String? entrenador;
+  final String? socio;
+
+  SolicitudAyuda({
+    required this.id,
+    required this.motivo,
+    required this.motivoTexto,
+    this.ejercicio,
+    this.mensaje,
+    required this.estado,
+    required this.creadaEn,
+    this.atendidaEn,
+    this.entrenador,
+    this.socio,
+  });
+
+  bool get pendiente => estado == 'pendiente';
+  bool get atendida => estado == 'atendida';
+
+  factory SolicitudAyuda.fromJson(Map<String, dynamic> json) => SolicitudAyuda(
+    id: json['id'] as int,
+    motivo: json['motivo'] as String,
+    motivoTexto: json['motivo_texto'] as String,
+    ejercicio: json['ejercicio'] as String?,
+    mensaje: json['mensaje'] as String?,
+    estado: json['estado'] as String,
+    creadaEn: DateTime.parse(json['creada_en'] as String),
+    atendidaEn: json['atendida_en'] == null
+        ? null
+        : DateTime.parse(json['atendida_en'] as String),
+    entrenador: json['entrenador'] as String?,
+    socio: json['socio'] as String?,
+  );
+}
+
+/// Lo que ve el socio: si puede pedir ayuda, su solicitud activa y las anteriores.
+class MisSolicitudesAyuda {
+  final bool puedePedir;
+  final String? gimnasio;
+  final List<MotivoAyuda> motivos;
+  final SolicitudAyuda? activa;
+  final List<SolicitudAyuda> solicitudes;
+
+  MisSolicitudesAyuda({
+    required this.puedePedir,
+    this.gimnasio,
+    required this.motivos,
+    this.activa,
+    required this.solicitudes,
+  });
+
+  factory MisSolicitudesAyuda.fromJson(Map<String, dynamic> json) => MisSolicitudesAyuda(
+    puedePedir: json['puede_pedir'] as bool? ?? false,
+    gimnasio: json['gimnasio'] as String?,
+    motivos: (json['motivos'] as List)
+        .map((m) => MotivoAyuda.fromJson(m as Map<String, dynamic>))
+        .toList(),
+    activa: json['activa'] == null
+        ? null
+        : SolicitudAyuda.fromJson(json['activa'] as Map<String, dynamic>),
+    solicitudes: (json['solicitudes'] as List)
+        .map((s) => SolicitudAyuda.fromJson(s as Map<String, dynamic>))
+        .toList(),
+  );
+}
+
+/// Bandeja del entrenador: pendientes del gimnasio y atendidas hoy.
+class BandejaAyuda {
+  final String gimnasio;
+  final List<SolicitudAyuda> pendientes;
+  final List<SolicitudAyuda> atendidasHoy;
+  final int ultimoId;
+
+  BandejaAyuda({
+    required this.gimnasio,
+    required this.pendientes,
+    required this.atendidasHoy,
+    required this.ultimoId,
+  });
+
+  factory BandejaAyuda.fromJson(Map<String, dynamic> json) => BandejaAyuda(
+    gimnasio: (json['gimnasio'] as Map<String, dynamic>)['nombre'] as String,
+    pendientes: (json['pendientes'] as List)
+        .map((s) => SolicitudAyuda.fromJson(s as Map<String, dynamic>))
+        .toList(),
+    atendidasHoy: (json['atendidas_hoy'] as List)
+        .map((s) => SolicitudAyuda.fromJson(s as Map<String, dynamic>))
+        .toList(),
+    ultimoId: json['ultimo_id'] as int? ?? 0,
   );
 }

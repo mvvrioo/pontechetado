@@ -6,10 +6,18 @@ import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
 import '../widgets/nivel.dart';
+import 'ayuda_screen.dart';
 import 'chatbot_screen.dart';
+import 'ranking_screen.dart';
 
 class EntrenarScreen extends StatefulWidget {
-  const EntrenarScreen({super.key});
+  /// false para entrenadores y admins: no ven el botón de pedir ayuda.
+  final bool esSocio;
+
+  /// Se avisa al volver de "Pedir ayuda" (para que la app vigile la respuesta).
+  final VoidCallback? alPedirAyuda;
+
+  const EntrenarScreen({super.key, this.esSocio = true, this.alPedirAyuda});
 
   @override
   State<EntrenarScreen> createState() => _EntrenarScreenState();
@@ -24,6 +32,7 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
   Progreso? _progreso;
   RutinaDetalle? _rutinaDelDia; // la rutina asignada al día de la semana elegido
   bool _cargando = true;
+  bool _terminando = false;
   Object? _error;
 
   @override
@@ -404,6 +413,18 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
       appBar: AppBar(
         title: const Text('Entrenar'),
         actions: [
+          if (widget.esSocio)
+            IconButton(
+              tooltip: 'Pedir ayuda a un entrenador',
+              icon: const Icon(Icons.support_agent),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AyudaScreen(ejercicios: _ejercicios)),
+                );
+                widget.alPedirAyuda?.call();
+              },
+            ),
           IconButton(
             tooltip: 'Asistente de ejercicios',
             icon: const Icon(Icons.smart_toy_outlined),
@@ -550,6 +571,91 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
     );
   }
 
+  bool get _viendoHoy =>
+      _fecha.year == _hoy.year && _fecha.month == _hoy.month && _fecha.day == _hoy.day;
+
+  /// Cierra el entrenamiento de hoy: muestra el resumen y recalcula el
+  /// ranking del gimnasio para avisar si el usuario subió o bajó de puesto.
+  Future<void> _terminarEntrenamiento() async {
+    final series = [
+      for (final e in _entreno?.ejercicios ?? <EjercicioDelDia>[]) ...e.series,
+    ];
+    final xpDia = _progreso?.xpDeDia(series) ?? 0;
+    final volumen = _entreno?.volumenTotal ?? 0;
+
+    setState(() => _terminando = true);
+    CambioRanking? ranking;
+    try {
+      ranking = await _api.actualizarRanking();
+    } catch (_) {
+      // Si el ranking falla igual se muestra el resumen del entrenamiento
+    }
+    if (!mounted) return;
+    setState(() => _terminando = false);
+
+    final verRanking = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.flag_circle, size: 44, color: Colores.marca),
+        title: const Text('Entrenamiento terminado'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                _datoCabecera('${formatearMiles(volumen)} kg', 'volumen'),
+                _datoCabecera('${series.length}', 'series'),
+                _datoCabecera('+$xpDia', 'XP', resaltado: true),
+              ],
+            ),
+            if (ranking != null && ranking.mensaje != null) ...[
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colores.superficieAlta,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      ranking.subio
+                          ? Icons.trending_up
+                          : ranking.bajo
+                              ? Icons.trending_down
+                              : Icons.leaderboard,
+                      color: ranking.bajo ? Colores.peligro : Colores.marca,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(ranking.mensaje!)),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          if (ranking != null && ranking.aplica)
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ver ranking'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Listo'),
+          ),
+        ],
+      ),
+    );
+    if (verRanking == true && mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const RankingScreen()),
+      );
+    }
+  }
+
   /// Cabecera: qué día es, qué rutina toca, volumen, series y XP del día.
   Widget _tarjetaDelDia(double totalVolumen) {
     final progreso = _progreso;
@@ -624,6 +730,22 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
               const SizedBox(height: 8),
               BarraXp(nivel: progreso.nivel),
             ],
+          ],
+          if (_viendoHoy && _totalSeries > 0) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _terminando ? null : _terminarEntrenamiento,
+                icon: const Icon(Icons.flag_outlined),
+                label: Text(_terminando ? 'Calculando...' : 'Terminar entrenamiento'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colores.marca,
+                  side: const BorderSide(color: Colores.marca),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
           ],
         ],
       ),

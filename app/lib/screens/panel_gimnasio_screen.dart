@@ -4,6 +4,8 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import 'bandeja_ayuda_screen.dart';
+import 'ranking_screen.dart';
 
 /// Panel del admin de un gimnasio (ej: recepción de Marfit).
 /// Aquí se activa Premium escribiendo el correo del cliente.
@@ -130,6 +132,68 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
     }
   }
 
+  Future<void> _agregarEntrenador() async {
+    final datos = await showDialog<_DatosEntrenador>(
+      context: context,
+      builder: (_) => _DialogoEntrenador(gimnasio: _panel?.gimnasio.nombre ?? ''),
+    );
+    if (datos == null) return;
+
+    try {
+      final mensaje = await _api.asignarEntrenador(
+        email: datos.email,
+        nombre: datos.nombre,
+        password: datos.password,
+        gimnasioId: widget.gimnasioId,
+      );
+      if (!mounted) return;
+      mostrarMensaje(context, mensaje);
+      await _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      mostrarError(context, e);
+    }
+  }
+
+  Future<void> _quitarEntrenador(AdminGimnasio e) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Quitar entrenador?'),
+        content: Text(
+          '${e.nombre} dejará de recibir las solicitudes de ayuda. Su cuenta no se borra.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colores.peligro),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Quitar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    try {
+      final mensaje = await _api.quitarEntrenador(e.id, gimnasioId: widget.gimnasioId);
+      if (!mounted) return;
+      mostrarMensaje(context, mensaje);
+      await _cargar();
+    } catch (err) {
+      if (!mounted) return;
+      mostrarError(context, err);
+    }
+  }
+
+  Future<void> _abrir(Widget pantalla) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => pantalla));
+    _cargar();
+  }
+
   void _renovar(MiembroGimnasio m) {
     _emailCtrl.text = m.email;
     mostrarMensaje(context, 'Elige los meses y toca "Activar Premium"');
@@ -140,6 +204,22 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_panel == null ? 'Panel' : 'Panel ${_panel!.gimnasio.nombre}'),
+        actions: [
+          IconButton(
+            tooltip: 'Ranking del gimnasio',
+            icon: const Icon(Icons.leaderboard_outlined),
+            onPressed: () => _abrir(RankingScreen(gimnasioId: widget.gimnasioId)),
+          ),
+          IconButton(
+            tooltip: 'Solicitudes de ayuda',
+            icon: Badge(
+              isLabelVisible: (_panel?.ayudaPendiente ?? 0) > 0,
+              label: Text('${_panel?.ayudaPendiente ?? 0}'),
+              child: const Icon(Icons.support_agent),
+            ),
+            onPressed: () => _abrir(BandejaAyudaScreen(gimnasioId: widget.gimnasioId)),
+          ),
+        ],
       ),
       body: _construirCuerpo(),
     );
@@ -224,6 +304,56 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
                     icon: const Icon(Icons.check_circle),
                     label: Text(_activando ? 'Activando...' : 'Activar Premium'),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          // ---- Entrenadores ----
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 8, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.sports, color: Colores.marca),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Entrenadores',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _agregarEntrenador,
+                        icon: const Icon(Icons.person_add_alt, size: 18),
+                        label: const Text('Agregar'),
+                      ),
+                    ],
+                  ),
+                  if (panel.entrenadores.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(0, 0, 10, 8),
+                      child: Text(
+                        'Agrega a tus entrenadores para que reciban en su teléfono '
+                        'las solicitudes de ayuda de los socios.',
+                        style: TextStyle(color: Colores.textoSuave),
+                      ),
+                    ),
+                  for (final e in panel.entrenadores)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(e.nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Text(e.email),
+                      trailing: IconButton(
+                        tooltip: 'Quitar entrenador',
+                        icon: const Icon(Icons.person_remove_outlined),
+                        onPressed: () => _quitarEntrenador(e),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -318,6 +448,107 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _DatosEntrenador {
+  final String email;
+  final String nombre;
+  final String password;
+
+  _DatosEntrenador(this.email, this.nombre, this.password);
+}
+
+/// Correo del entrenador. Si todavía no tiene cuenta, se crea con el
+/// nombre y la contraseña inicial que escriba el admin.
+class _DialogoEntrenador extends StatefulWidget {
+  final String gimnasio;
+
+  const _DialogoEntrenador({required this.gimnasio});
+
+  @override
+  State<_DialogoEntrenador> createState() => _DialogoEntrenadorState();
+}
+
+class _DialogoEntrenadorState extends State<_DialogoEntrenador> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _nombreCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _nombreCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Entrenador de ${widget.gimnasio}'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _emailCtrl,
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Correo del entrenador'),
+                validator: (v) =>
+                    (v == null || !v.contains('@')) ? 'Escribe un correo válido' : null,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Si la cuenta todavía no existe, completa esto para crearla:',
+                style: TextStyle(fontSize: 13, color: Colores.textoSuave),
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _nombreCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Nombre (opcional)'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _passCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña inicial (opcional)',
+                  helperText: 'Mínimo 8 caracteres',
+                ),
+                validator: (v) => (v != null && v.isNotEmpty && v.length < 8)
+                    ? 'Mínimo 8 caracteres'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.pop(
+              context,
+              _DatosEntrenador(
+                _emailCtrl.text.trim().toLowerCase(),
+                _nombreCtrl.text.trim(),
+                _passCtrl.text,
+              ),
+            );
+          },
+          child: const Text('Agregar'),
+        ),
+      ],
     );
   }
 }

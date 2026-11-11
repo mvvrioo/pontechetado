@@ -237,6 +237,14 @@ class ApiService {
     await _post('entrenos/eliminar_serie.php', {'id': id});
   }
 
+  /// Evolución de los pesos. Sin [ejercicioId] solo trae la lista de ejercicios entrenados.
+  Future<EvolucionEjercicio> evolucionEjercicio({int? ejercicioId}) async {
+    final ruta = ejercicioId == null
+        ? 'entrenos/evolucion.php'
+        : 'entrenos/evolucion.php?ejercicio_id=$ejercicioId';
+    return EvolucionEjercicio.fromJson(await _get(ruta));
+  }
+
   Future<List<VolumenDia>> resumenVolumen(int dias) async {
     final datos = await _get('entrenos/resumen.php?dias=$dias');
     return (datos['dias'] as List)
@@ -392,6 +400,82 @@ class ApiService {
       'gimnasio_id': ?gimnasioId,
     });
     return datos['mensaje'] as String;
+  }
+
+  /// El admin del gimnasio agrega un entrenador. Si la cuenta no existe,
+  /// se crea con [nombre] y [password].
+  Future<String> asignarEntrenador({
+    required String email,
+    String nombre = '',
+    String password = '',
+    int? gimnasioId,
+  }) async {
+    final datos = await _post('admin/asignar_entrenador.php', {
+      'email': email,
+      'nombre': nombre,
+      'password': password,
+      'gimnasio_id': ?gimnasioId,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  Future<String> quitarEntrenador(int usuarioId, {int? gimnasioId}) async {
+    final datos = await _post('admin/quitar_entrenador.php', {
+      'usuario_id': usuarioId,
+      'gimnasio_id': ?gimnasioId,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  // ------------------------------------------------------------------
+  //  Ranking Top 10 del gimnasio
+  // ------------------------------------------------------------------
+  Future<RankingGimnasio> rankingGimnasio({int? gimnasioId}) async {
+    final ruta = gimnasioId == null
+        ? 'ranking/top.php'
+        : 'ranking/top.php?gimnasio_id=$gimnasioId';
+    return RankingGimnasio.fromJson(await _get(ruta));
+  }
+
+  /// Se llama al terminar el entrenamiento: dice si subiste o bajaste de puesto.
+  Future<CambioRanking> actualizarRanking() async {
+    return CambioRanking.fromJson(await _post('ranking/actualizar.php'));
+  }
+
+  // ------------------------------------------------------------------
+  //  Ayuda de un entrenador
+  // ------------------------------------------------------------------
+  Future<MisSolicitudesAyuda> misSolicitudesAyuda() async {
+    return MisSolicitudesAyuda.fromJson(await _get('ayuda/mis_solicitudes.php'));
+  }
+
+  Future<String> solicitarAyuda({
+    required String motivo,
+    int? ejercicioId,
+    String mensaje = '',
+  }) async {
+    final datos = await _post('ayuda/solicitar.php', {
+      'motivo': motivo,
+      'ejercicio_id': ?ejercicioId,
+      'mensaje': mensaje,
+    });
+    return datos['mensaje'] as String;
+  }
+
+  Future<void> cancelarAyuda(int id) async {
+    await _post('ayuda/cancelar.php', {'id': id});
+  }
+
+  /// Bandeja del entrenador. El superadmin pasa [gimnasioId].
+  Future<BandejaAyuda> bandejaAyuda({int? gimnasioId}) async {
+    final ruta = gimnasioId == null
+        ? 'ayuda/pendientes.php'
+        : 'ayuda/pendientes.php?gimnasio_id=$gimnasioId';
+    return BandejaAyuda.fromJson(await _get(ruta));
+  }
+
+  Future<void> atenderAyuda(int id) async {
+    await _post('ayuda/atender.php', {'id': id});
   }
 
   // ---- Solo superadmin (equipo PonteChetado) ----

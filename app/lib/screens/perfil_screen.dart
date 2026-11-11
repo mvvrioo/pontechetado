@@ -7,6 +7,8 @@ import '../utils.dart';
 import '../widgets/avatar.dart';
 import '../widgets/nivel.dart';
 import 'avatar_screen.dart';
+import 'ayuda_screen.dart';
+import 'bandeja_ayuda_screen.dart';
 import 'chatbot_screen.dart';
 import 'login_screen.dart';
 import 'panel_gimnasio_screen.dart';
@@ -137,7 +139,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final usuario = _usuario!;
     final plan = _plan!;
     final progreso = _progreso;
-    final esCliente = !usuario.esAdminGimnasio && !usuario.esSuperadmin;
+    final esCliente = usuario.esCliente;
 
     return RefreshIndicator(
       onRefresh: _cargar,
@@ -198,6 +200,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             if (usuario.esSuperadmin) const _Etiqueta('SUPERADMIN'),
                             if (usuario.esAdminGimnasio)
                               _Etiqueta('ADMIN ${usuario.gimnasioNombre?.toUpperCase() ?? ''}'),
+                            if (usuario.esEntrenador)
+                              _Etiqueta('ENTRENADOR ${usuario.gimnasioNombre?.toUpperCase() ?? ''}'),
                             if (usuario.esPremium)
                               const _Etiqueta('PREMIUM', color: Colores.premium),
                             if (progreso != null && !progreso.bloqueado)
@@ -235,9 +239,29 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _abrir(const ChatbotScreen()),
                 ),
+                if (esCliente) ...[
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.support_agent, color: Colores.marca),
+                    title: const Text('Pedir ayuda a un entrenador'),
+                    subtitle: const Text('Que un entrenador de tu gimnasio se acerque'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _abrir(const AyudaScreen()),
+                  ),
+                ],
               ],
             ),
           ),
+          if (usuario.esEntrenador)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.support_agent, color: Colores.marca),
+                title: const Text('Solicitudes de ayuda'),
+                subtitle: Text('Socios de ${usuario.gimnasioNombre ?? 'tu gimnasio'} que piden un entrenador'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _abrir(const BandejaAyudaScreen()),
+              ),
+            ),
 
           // ---- Accesos de administración ----
           if (usuario.esSuperadmin)
@@ -255,7 +279,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               child: ListTile(
                 leading: const Icon(Icons.storefront, color: Colores.marca),
                 title: Text('Panel de ${usuario.gimnasioNombre ?? 'mi gimnasio'}'),
-                subtitle: const Text('Activar Premium a clientes'),
+                subtitle: const Text('Premium de clientes, entrenadores y solicitudes de ayuda'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _abrir(const PanelGimnasioScreen()),
               ),

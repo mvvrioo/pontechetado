@@ -5,7 +5,9 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import 'bandeja_ayuda_screen.dart';
 import 'panel_gimnasio_screen.dart';
+import 'ranking_screen.dart';
 import 'superadmin_screen.dart';
 
 /// Gimnasios asociados + tu membresía. Los admins ven aquí el acceso a su panel.
@@ -93,7 +95,27 @@ class _GimnasiosScreenState extends State<GimnasiosScreen> {
               subtitulo: 'Activa Premium a tus clientes con su correo',
               alTocar: () => _abrir(const PanelGimnasioScreen()),
             ),
-          if (!u.esAdminGimnasio && !u.esSuperadmin) _TarjetaMembresia(usuario: u),
+          if (u.esPersonalGimnasio) ...[
+            _TarjetaAcceso(
+              icono: Icons.support_agent,
+              titulo: 'Solicitudes de ayuda',
+              subtitulo: 'Socios de ${u.gimnasioNombre ?? 'tu gimnasio'} que piden un entrenador',
+              alTocar: () => _abrir(const BandejaAyudaScreen()),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.leaderboard, color: Colores.premium),
+                title: Text(
+                  'Ranking de ${u.gimnasioNombre ?? 'mi gimnasio'}',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: const Text('Top 10 de los socios más fuertes'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _abrir(const RankingScreen()),
+              ),
+            ),
+          ],
+          if (u.esCliente) _TarjetaMembresia(usuario: u),
           const Padding(
             padding: EdgeInsets.fromLTRB(4, 12, 4, 10),
             child: Text(

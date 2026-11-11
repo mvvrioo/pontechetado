@@ -20,8 +20,8 @@ services:
     ports:
       - "3308:3306"
     volumes:
-      # Los .sql de esta carpeta se ejecutan solos la PRIMERA vez que se crea la base
-      - ./base_de_datos/docker-init:/docker-entrypoint-initdb.d:ro
+      # Este script crea las tablas y el catálogo la PRIMERA vez que se crea la base
+      - ./base_de_datos/instalacion_completa.sql:/docker-entrypoint-initdb.d/01_instalacion.sql:ro
       # Los datos quedan guardados aunque apagues el contenedor
       - datos_mysql:/var/lib/mysql
     healthcheck:

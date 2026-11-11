@@ -248,6 +248,7 @@ function buscar_usuario(mysqli $conn, int $id): ?array
 //  Roles y gimnasios
 // =====================================================================
 const ROL_USUARIO    = 'usuario';
+const ROL_ENTRENADOR = 'entrenador';
 const ROL_ADMIN_GYM  = 'admin_gimnasio';
 const ROL_SUPERADMIN = 'superadmin';
 
@@ -411,4 +412,120 @@ function leer_dia_semana(array $datos): ?int
         error_json("El día debe ser de 1 (lunes) a 7 (domingo)");
     }
     return $dia;
+}
+
+
+// =====================================================================
+//  Personal del gimnasio (entrenadores y admins)
+// =====================================================================
+
+// Gimnasio en el que trabaja este usuario (entrenador o admin).
+// El superadmin elige cualquiera con "gimnasio_id". Un socio recibe 403.
+function gimnasio_del_personal(mysqli $conn, array $usuario, int $gimnasio_pedido = 0): array
+{
+    $rol = $usuario['rol'] ?? '';
+    if ($rol === ROL_ENTRENADOR || $rol === ROL_ADMIN_GYM) {
+        $gimnasio_id = (int)$usuario['gimnasio_id'];
+    } elseif (es_superadmin($usuario)) {
+        $gimnasio_id = $gimnasio_pedido;
+    } else {
+        error_json("Solo los entrenadores del gimnasio pueden ver esto", 403);
+    }
+
+    $stmt = $conn->prepare("SELECT id, nombre, direccion FROM gimnasios WHERE id = ?");
+    $stmt->bind_param("i", $gimnasio_id);
+    $stmt->execute();
+    $gimnasio = $stmt->get_result()->fetch_assoc();
+    if (!$gimnasio) {
+        error_json("Gimnasio no encontrado", 404);
+    }
+    $gimnasio['id'] = (int)$gimnasio['id'];
+    return $gimnasio;
+}
+
+// =====================================================================
+//  Ranking Top 10: los más fuertes del gimnasio
+// ---------------------------------------------------------------------
+//  Puntaje = suma de la mejor marca estimada (1RM) en los tres básicos:
+//      press banca + sentadilla + peso muerto
+//  1RM estimado (fórmula de Epley) = peso × (1 + repeticiones / 30)
+//  Solo cuentan series de 1 a 12 repeticiones: con más repeticiones la
+//  estimación deja de ser confiable.
+//  Ejemplo: banca 80×5 (93,3) + sentadilla 100×5 (116,7) + peso muerto
+//  120×3 (132) = 342 puntos.
+// =====================================================================
+const RANKING_LEVANTAMIENTOS = [
+    'banca'       => 'Press banca',
+    'sentadilla'  => 'Sentadilla',
+    'peso_muerto' => 'Peso muerto',
+];
+const RANKING_MAX_REPS = 12;
+const RANKING_TOP      = 10;
+
+function marca_1rm(float $peso, int $reps): float
+{
+    return $reps <= 1 ? $peso : $peso * (1 + $reps / 30);
+}
+
+// Redondea a medio kilo (como los discos del gimnasio)
+function medio_kilo(float $kg): float
+{
+    return round($kg * 2) / 2;
+}
+
+// Todos los socios Premium del gimnasio con al menos una marca, ordenados de mayor a menor.
+// Cada fila: usuario_id, nombre, banca, sentadilla, peso_muerto, puntaje, posicion
+function calcular_ranking(mysqli $conn, int $gimnasio_id): array
+{
+    $nombres = array_values(RANKING_LEVANTAMIENTOS);
+    $max_reps = RANKING_MAX_REPS;
+    $stmt = $conn->prepare(
+        "SELECT u.id AS usuario_id, u.nombre, e.nombre AS ejercicio,
+                MAX(CASE WHEN s.repeticiones <= 1 THEN s.peso_kg
+                         ELSE s.peso_kg * (1 + s.repeticiones / 30) END) AS mejor
+           FROM usuarios u
+           JOIN series_entrenamiento s ON s.usuario_id = u.id
+           JOIN ejercicios e ON e.id = s.ejercicio_id AND e.usuario_id IS NULL
+          WHERE u.gimnasio_id = ? AND u.rol = 'usuario' AND u.premium_hasta > NOW()
+            AND e.nombre IN (?, ?, ?)
+            AND s.peso_kg > 0 AND s.repeticiones BETWEEN 1 AND ?
+          GROUP BY u.id, u.nombre, e.nombre"
+    );
+    $stmt->bind_param("isssi", $gimnasio_id, $nombres[0], $nombres[1], $nombres[2], $max_reps);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+
+    $claves = array_flip(RANKING_LEVANTAMIENTOS); // 'Press banca' => 'banca'
+    $socios = [];
+    while ($fila = $resultado->fetch_assoc()) {
+        $id = (int)$fila['usuario_id'];
+        if (!isset($socios[$id])) {
+            $socios[$id] = ["usuario_id" => $id, "nombre" => $fila['nombre'],
+                            "banca" => 0.0, "sentadilla" => 0.0, "peso_muerto" => 0.0];
+        }
+        $socios[$id][$claves[$fila['ejercicio']]] = medio_kilo((float)$fila['mejor']);
+    }
+
+    foreach ($socios as &$s) {
+        $s['puntaje'] = $s['banca'] + $s['sentadilla'] + $s['peso_muerto'];
+    }
+    unset($s);
+
+    $lista = array_values($socios);
+    usort($lista, function ($a, $b) {
+        return [$b['puntaje'], $a['nombre']] <=> [$a['puntaje'], $b['nombre']];
+    });
+
+    // Empates comparten puesto (1, 2, 2, 4...)
+    $anterior = null;
+    $puesto = 0;
+    foreach ($lista as $i => &$s) {
+        if ($anterior === null || $s['puntaje'] < $anterior) {
+            $puesto = $i + 1;
+            $anterior = $s['puntaje'];
+        }
+        $s['posicion'] = $puesto;
+    }
+    unset($s);
+    return $lista;
 }
