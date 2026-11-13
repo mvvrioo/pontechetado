@@ -157,17 +157,17 @@ class _TarjetaAcceso extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(icono, color: Colors.black, size: 32),
+        leading: Icon(icono, color: Colores.sobreMarca, size: 32),
         title: Text(
           titulo,
           style: const TextStyle(
-            color: Colors.black,
+            color: Colores.sobreMarca,
             fontWeight: FontWeight.w800,
             fontSize: 17,
           ),
         ),
-        subtitle: Text(subtitulo, style: const TextStyle(color: Colors.black87)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.black),
+        subtitle: Text(subtitulo, style: const TextStyle(color: Colores.sobreMarcaSuave)),
+        trailing: const Icon(Icons.chevron_right, color: Colores.sobreMarca),
         onTap: alTocar,
       ),
     );
@@ -334,7 +334,7 @@ class _TarjetaGimnasio extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
-                              color: Colors.black,
+                              color: Colores.sobreMarca,
                             ),
                           ),
                         ),

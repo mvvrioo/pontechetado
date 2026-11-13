@@ -130,7 +130,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             gradient: const RadialGradient(
-              colors: [Color(0xFF2B3A12), Colores.superficie],
+              colors: [Colores.marcaProfunda, Colores.superficie],
               radius: 0.9,
             ),
             border: Border.all(color: Colores.borde),

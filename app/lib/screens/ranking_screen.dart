@@ -156,7 +156,7 @@ class _TarjetaMiPuesto extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF2B3A12), Colores.superficie],
+          colors: [Colores.marcaProfunda, Colores.superficie],
         ),
         border: Border.all(color: Colores.marca.withValues(alpha: 0.35)),
       ),
@@ -258,7 +258,7 @@ class _FilaTop extends StatelessWidget {
     ].join(' · ');
 
     return Card(
-      color: fila.esYo ? const Color(0xFF232E12) : null,
+      color: fila.esYo ? Colores.marcaTenue : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
         side: BorderSide(color: fila.esYo ? Colores.marca : Colores.borde),

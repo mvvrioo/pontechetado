@@ -173,7 +173,7 @@ class _TarjetaNivel extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF26330F), Colores.superficie],
+          colors: [Colores.marcaProfunda, Colores.superficie],
         ),
         border: Border.all(color: Colores.marca.withValues(alpha: 0.35)),
       ),
@@ -381,7 +381,7 @@ class _CirculoDia extends StatelessWidget {
     if (dia.entreno) {
       fondo = Colores.marca;
       borde = Colores.marca;
-      contenido = const Icon(Icons.check, color: Colors.black, size: 20);
+      contenido = const Icon(Icons.check, color: Colores.sobreMarca, size: 20);
     } else {
       fondo = Colors.transparent;
       borde = dia.esHoy ? Colores.marca : Colores.borde;

@@ -1,6 +1,6 @@
 <?php
 // POST /api/ayuda/solicitar.php   (requiere token de socio Premium con gimnasio)
-// Body: { "motivo": "tecnica|rutina|maquina|otro", "ejercicio_id": 12 (opcional),
+// Body: { "motivo": "tecnica|rutina|maquina|consulta|otro", "ejercicio_id": 12 (opcional),
 //         "mensaje": "Estoy en la máquina de remo, no sé regularla" (opcional) }
 //
 // El socio pide que un entrenador del gimnasio se acerque (Historia 014).
@@ -26,8 +26,8 @@ $ejercicio_id = entero($datos, 'ejercicio_id');
 if (!array_key_exists($motivo, MOTIVOS_AYUDA)) {
     error_json("Elige el motivo de tu solicitud");
 }
-if ($motivo === 'otro' && $mensaje === '') {
-    error_json("Cuéntale al entrenador en qué te puede ayudar");
+if (($motivo === 'otro' || $motivo === 'consulta') && $mensaje === '') {
+    error_json("Escribe tu consulta para el entrenador");
 }
 
 $ejercicio = null;

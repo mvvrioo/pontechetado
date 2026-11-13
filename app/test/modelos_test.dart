@@ -254,4 +254,30 @@ void main() {
       expect(p.mesesPermitidos, [1, 3, 6, 12]);
     });
   });
+
+  group('Chat de ayuda', () {
+    test('separa mis mensajes de los del entrenador y cuenta los sin leer', () {
+      final chat = ChatAyuda.fromJson({
+        'solicitud': {
+          'id': 9, 'motivo': 'consulta', 'motivo_texto': 'Consulta (pagos, horarios u otra duda)',
+          'ejercicio': null, 'mensaje': '¿Hasta qué día pago?', 'estado': 'pendiente',
+          'creada_en': '2026-11-12 20:00:00', 'atendida_en': null, 'entrenador': null,
+          'socio': 'Ana', 'mensajes_chat': 2, 'sin_leer_socio': 1, 'sin_leer_entrenador': 0,
+        },
+        'soy_el_socio': true,
+        'puede_escribir': true,
+        'mensajes': [
+          {'id': 1, 'texto': 'Hasta el 5 de cada mes', 'autor': 'Coach', 'es_mio': false,
+           'del_socio': false, 'creado_en': '2026-11-12 20:01:00', 'leido': true},
+          {'id': 2, 'texto': 'Gracias', 'autor': 'Ana', 'es_mio': true,
+           'del_socio': true, 'creado_en': '2026-11-12 20:02:00', 'leido': false},
+        ],
+      });
+      expect(chat.soyElSocio, isTrue);
+      expect(chat.puedeEscribir, isTrue);
+      expect(chat.solicitud.sinLeerSocio, 1);
+      expect(chat.mensajes.where((m) => m.esMio).single.texto, 'Gracias');
+      expect(chat.mensajes.first.delSocio, isFalse);
+    });
+  });
 }

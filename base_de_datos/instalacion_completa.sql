@@ -115,6 +115,20 @@ CREATE TABLE IF NOT EXISTS `historial_premium` (
   KEY `idx_historial_gimnasio` (`gimnasio_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------- mensajes_ayuda ----------
+CREATE TABLE IF NOT EXISTS `mensajes_ayuda` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `solicitud_id` int NOT NULL,
+  `usuario_id` int NOT NULL,
+  `texto` varchar(500) NOT NULL,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `leido_en` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_mensajes_solicitud` (`solicitud_id`,`id`),
+  KEY `idx_mensajes_usuario` (`usuario_id`),
+  CONSTRAINT `fk_mensaje_solicitud` FOREIGN KEY (`solicitud_id`) REFERENCES `solicitudes_ayuda` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ---------- objetivos ----------
 CREATE TABLE IF NOT EXISTS `objetivos` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -239,7 +253,7 @@ CREATE TABLE IF NOT EXISTS `solicitudes_ayuda` (
   `id` int NOT NULL AUTO_INCREMENT,
   `usuario_id` int NOT NULL,
   `gimnasio_id` int NOT NULL,
-  `motivo` enum('tecnica','rutina','maquina','otro') NOT NULL,
+  `motivo` enum('tecnica','rutina','maquina','consulta','otro') NOT NULL,
   `ejercicio_id` int DEFAULT NULL,
   `mensaje` varchar(255) DEFAULT NULL,
   `estado` enum('pendiente','atendida','cancelada') NOT NULL DEFAULT 'pendiente',

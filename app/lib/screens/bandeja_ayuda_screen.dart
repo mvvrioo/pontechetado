@@ -6,6 +6,7 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import 'chat_ayuda_screen.dart';
 
 /// Bandeja del entrenador: solicitudes de ayuda de los socios del gimnasio.
 /// Se actualiza sola cada 8 segundos y avisa cuando llega una nueva.
@@ -90,6 +91,14 @@ class _BandejaAyudaScreenState extends State<BandejaAyudaScreen> {
     }
   }
 
+  Future<void> _abrirChat(SolicitudAyuda s) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChatAyudaScreen(solicitudId: s.id)),
+    );
+    _cargar(silencioso: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,6 +164,7 @@ class _BandejaAyudaScreenState extends State<BandejaAyudaScreen> {
               solicitud: s,
               ocupado: _atendiendo == s.id,
               alAtender: () => _atender(s),
+              alAbrirChat: () => _abrirChat(s),
             ),
           if (b.atendidasHoy.isNotEmpty) ...[
             const Padding(
@@ -178,6 +188,8 @@ class _BandejaAyudaScreenState extends State<BandejaAyudaScreen> {
                     '${s.atendidaEn == null ? '' : ' a las ${_hora(s.atendidaEn!)}'}',
                   ),
                   isThreeLine: true,
+                  trailing: s.mensajesChat > 0 ? const Icon(Icons.chat_bubble_outline, size: 20) : null,
+                  onTap: () => _abrirChat(s),
                 ),
               ),
           ],
@@ -207,11 +219,13 @@ class _TarjetaPendiente extends StatelessWidget {
   final SolicitudAyuda solicitud;
   final bool ocupado;
   final VoidCallback alAtender;
+  final VoidCallback alAbrirChat;
 
   const _TarjetaPendiente({
     required this.solicitud,
     required this.ocupado,
     required this.alAtender,
+    required this.alAbrirChat,
   });
 
   @override
@@ -234,7 +248,7 @@ class _TarjetaPendiente extends StatelessWidget {
                   backgroundColor: Colores.marca,
                   child: Text(
                     nombre.isEmpty ? '?' : nombre[0].toUpperCase(),
-                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
+                    style: const TextStyle(color: Colores.sobreMarca, fontWeight: FontWeight.w900),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -268,10 +282,28 @@ class _TarjetaPendiente extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: ocupado ? null : alAtender,
-              icon: const Icon(Icons.check),
-              label: Text(ocupado ? 'Guardando...' : 'Marcar como atendida'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: alAbrirChat,
+                    icon: Badge(
+                      isLabelVisible: s.sinLeerEntrenador > 0,
+                      label: Text('${s.sinLeerEntrenador}'),
+                      child: const Icon(Icons.chat_bubble_outline, size: 20),
+                    ),
+                    label: Text(s.sinLeerEntrenador > 0 ? 'Mensaje nuevo' : 'Responder'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: ocupado ? null : alAtender,
+                    icon: const Icon(Icons.check),
+                    label: Text(ocupado ? 'Guardando...' : 'Atendida'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

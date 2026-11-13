@@ -247,11 +247,11 @@ class _TarjetaPersonalizada extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: const Icon(Icons.auto_awesome, color: Colors.black, size: 30),
+        leading: const Icon(Icons.auto_awesome, color: Colores.sobreMarca, size: 30),
         title: Text(
           tieneRutina ? 'Tu rutina personalizada' : 'Arma tu rutina personalizada',
           style: const TextStyle(
-            color: Colors.black,
+            color: Colores.sobreMarca,
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),
@@ -260,9 +260,9 @@ class _TarjetaPersonalizada extends StatelessWidget {
           tieneRutina
               ? 'Toca para cambiar tu objetivo o tus días'
               : 'Elige fuerza, hipertrofia, híbrido o salud y tus días, y te armamos la semana',
-          style: const TextStyle(color: Colors.black87),
+          style: const TextStyle(color: Colores.sobreMarcaSuave),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.black),
+        trailing: const Icon(Icons.chevron_right, color: Colores.sobreMarca),
         onTap: alTocar,
       ),
     );
@@ -307,7 +307,7 @@ class _SeccionDia extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: esHoy ? Colors.black : Colores.texto,
+                color: esHoy ? Colores.sobreMarca : Colores.texto,
               ),
             ),
           ),

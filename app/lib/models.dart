@@ -1043,6 +1043,9 @@ class SolicitudAyuda {
   final DateTime? atendidaEn;
   final String? entrenador;
   final String? socio;
+  final int mensajesChat;
+  final int sinLeerSocio; // mensajes del entrenador que el socio no ha leído
+  final int sinLeerEntrenador; // mensajes del socio que el entrenador no ha leído
 
   SolicitudAyuda({
     required this.id,
@@ -1055,6 +1058,9 @@ class SolicitudAyuda {
     this.atendidaEn,
     this.entrenador,
     this.socio,
+    this.mensajesChat = 0,
+    this.sinLeerSocio = 0,
+    this.sinLeerEntrenador = 0,
   });
 
   bool get pendiente => estado == 'pendiente';
@@ -1073,6 +1079,64 @@ class SolicitudAyuda {
         : DateTime.parse(json['atendida_en'] as String),
     entrenador: json['entrenador'] as String?,
     socio: json['socio'] as String?,
+    mensajesChat: json['mensajes_chat'] as int? ?? 0,
+    sinLeerSocio: json['sin_leer_socio'] as int? ?? 0,
+    sinLeerEntrenador: json['sin_leer_entrenador'] as int? ?? 0,
+  );
+}
+
+/// Un mensaje del chat de una solicitud de ayuda.
+class MensajeAyuda {
+  final int id;
+  final String texto;
+  final String autor;
+  final bool esMio;
+  final bool delSocio;
+  final DateTime creadoEn;
+  final bool leido;
+
+  MensajeAyuda({
+    required this.id,
+    required this.texto,
+    required this.autor,
+    required this.esMio,
+    required this.delSocio,
+    required this.creadoEn,
+    this.leido = false,
+  });
+
+  factory MensajeAyuda.fromJson(Map<String, dynamic> json) => MensajeAyuda(
+    id: json['id'] as int,
+    texto: json['texto'] as String,
+    autor: json['autor'] as String,
+    esMio: json['es_mio'] as bool,
+    delSocio: json['del_socio'] as bool,
+    creadoEn: DateTime.parse(json['creado_en'] as String),
+    leido: json['leido'] as bool? ?? false,
+  );
+}
+
+/// Conversación completa de una solicitud de ayuda.
+class ChatAyuda {
+  final SolicitudAyuda solicitud;
+  final bool soyElSocio;
+  final bool puedeEscribir;
+  final List<MensajeAyuda> mensajes;
+
+  ChatAyuda({
+    required this.solicitud,
+    required this.soyElSocio,
+    required this.puedeEscribir,
+    required this.mensajes,
+  });
+
+  factory ChatAyuda.fromJson(Map<String, dynamic> json) => ChatAyuda(
+    solicitud: SolicitudAyuda.fromJson(json['solicitud'] as Map<String, dynamic>),
+    soyElSocio: json['soy_el_socio'] as bool? ?? false,
+    puedeEscribir: json['puede_escribir'] as bool? ?? false,
+    mensajes: (json['mensajes'] as List)
+        .map((m) => MensajeAyuda.fromJson(m as Map<String, dynamic>))
+        .toList(),
   );
 }
 

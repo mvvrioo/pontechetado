@@ -267,7 +267,7 @@ class _Paso extends StatelessWidget {
             child: Text(
               '$numero',
               style: const TextStyle(
-                color: Colors.black,
+                color: Colores.sobreMarca,
                 fontWeight: FontWeight.w900,
                 fontSize: 13,
               ),
@@ -321,7 +321,7 @@ class _TarjetaObjetivo extends StatelessWidget {
                   color: elegido ? Colores.marca : Colores.superficieAlta,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icono, color: elegido ? Colors.black : Colores.marca),
+                child: Icon(icono, color: elegido ? Colores.sobreMarca : Colores.marca),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -378,7 +378,7 @@ class _BotonDia extends StatelessWidget {
           letra,
           style: TextStyle(
             fontWeight: FontWeight.w900,
-            color: elegido ? Colors.black : Colores.texto,
+            color: elegido ? Colores.sobreMarca : Colores.texto,
           ),
         ),
       ),

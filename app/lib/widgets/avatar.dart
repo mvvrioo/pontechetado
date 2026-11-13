@@ -21,9 +21,9 @@ const pelosAvatar = [
   Color(0xFFE8E8E8),
 ];
 const ropasAvatar = [
-  Color(0xFFB6FF3B),
+  Color(0xFFD4A84B),
   Color(0xFF2E2E2E),
-  Color(0xFF3A6EA5),
+  Color(0xFFB6FF3B),
   Color(0xFFC8463A),
   Color(0xFF8E44AD),
   Color(0xFFFFC145),
@@ -159,7 +159,7 @@ class _PintorAvatar extends CustomPainter {
     final ropa = ropasAvatar[c.colorRopa.clamp(0, ropasAvatar.length - 1)];
     const short = Color(0xFF282C24);
     const blanco = Color(0xFFF0F0F0);
-    const lima = Color(0xFFB6FF3B);
+    const lima = Color(0xFFE8C46A); // detalles (muñequeras, cintillo) en dorado
     const oro = Color(0xFFFFC145);
 
     // ---- Aura (Chetado) ----

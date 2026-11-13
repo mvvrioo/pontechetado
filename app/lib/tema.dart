@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 
-/// Colores y estilo visual de toda la app.
+/// Colores y estilo visual de toda la app: negro con acento dorado.
+/// Diseños anteriores en GitHub: rama "respaldo-diseno-v1" (verde lima).
 class Colores {
-  static const marca = Color(0xFFB6FF3B); // verde "chetado"
-  static const fondo = Color(0xFF0D0F0B);
-  static const superficie = Color(0xFF161A12);
-  static const superficieAlta = Color(0xFF1F2419);
-  static const borde = Color(0xFF2B3223);
-  static const texto = Color(0xFFEEF2E6);
-  static const textoSuave = Color(0xFF9AA38E);
-  static const premium = Color(0xFFFFC145); // dorado
-  static const peligro = Color(0xFFFF6B5E);
+  static const marca = Color(0xFFD4A84B); // dorado
+  static const secundario = Color(0xFFF0D58C); // dorado claro (champaña)
+  static const sobreMarca = Color(0xFF0A0A0A); // texto e íconos encima del dorado
+  static const sobreMarcaSuave = Color(0xCC0A0A0A);
+  static const marcaProfunda = Color(0xFF221C10); // fondo de tarjetas destacadas
+  static const marcaTenue = Color(0xFF1B1710); // fila o tarjeta seleccionada
+  static const fondo = Color(0xFF0A0A0A); // negro
+  static const superficie = Color(0xFF151515);
+  static const superficieAlta = Color(0xFF1E1E1E);
+  static const borde = Color(0xFF262626);
+  static const texto = Color(0xFFF4F1EA); // blanco cálido
+  static const textoSuave = Color(0xFFA39E93); // gris cálido
+  static const premium = Color(0xFFF0D58C); // champaña (se distingue del dorado de la marca)
+  static const peligro = Color(0xFFE5484D);
+
+  /// Degradado dorado para botones y tarjetas destacadas.
+  static const degradado = LinearGradient(
+    colors: [Color(0xFFB8862F), Color(0xFFE8C46A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }
 
 ThemeData construirTema() {
@@ -21,9 +34,11 @@ ThemeData construirTema() {
 
   final esquema = base.copyWith(
     primary: Colores.marca,
-    onPrimary: Colors.black,
-    primaryContainer: const Color(0xFF2E3D12),
-    onPrimaryContainer: Colores.marca,
+    onPrimary: Colores.sobreMarca,
+    primaryContainer: Colores.marcaProfunda,
+    secondary: Colores.secundario,
+    onSecondary: Colores.sobreMarca,
+    onPrimaryContainer: Colores.texto,
     tertiary: Colores.premium,
     error: Colores.peligro,
     surface: Colores.fondo,
@@ -38,7 +53,7 @@ ThemeData construirTema() {
     outlineVariant: Colores.borde,
   );
 
-  final redondeo = BorderRadius.circular(18);
+  final redondeo = BorderRadius.circular(20);
 
   return ThemeData(
     useMaterial3: true,
@@ -49,10 +64,10 @@ ThemeData construirTema() {
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
       titleTextStyle: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w800,
+        fontSize: 26,
+        fontWeight: FontWeight.w900,
         color: Colores.texto,
-        letterSpacing: -0.5,
+        letterSpacing: -0.8,
       ),
     ),
     cardTheme: CardThemeData(
@@ -69,11 +84,13 @@ ThemeData construirTema() {
       backgroundColor: Colores.superficie,
       surfaceTintColor: Colors.transparent,
       indicatorColor: Colores.marca,
-      height: 68,
+      indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 0,
+      height: 70,
       iconTheme: WidgetStateProperty.resolveWith(
         (estados) => IconThemeData(
           color: estados.contains(WidgetState.selected)
-              ? Colors.black
+              ? Colores.sobreMarca
               : Colores.textoSuave,
         ),
       ),
@@ -104,7 +121,7 @@ ThemeData construirTema() {
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: Colores.marca,
-      foregroundColor: Colors.black,
+      foregroundColor: Colores.sobreMarca,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -143,5 +160,10 @@ ThemeData construirTema() {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
     dividerTheme: const DividerThemeData(color: Colores.borde),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: Colores.marca,
+      linearTrackColor: Colores.superficieAlta,
+    ),
+    listTileTheme: const ListTileThemeData(iconColor: Colores.marca),
   );
 }

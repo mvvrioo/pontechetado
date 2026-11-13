@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
+import '../widgets/alerta_ayuda.dart';
 import 'ayuda_screen.dart';
 import 'bandeja_ayuda_screen.dart';
+import 'chat_ayuda_screen.dart';
 import 'entrenar_screen.dart';
 import 'gimnasios_screen.dart';
 import 'perfil_screen.dart';
@@ -17,8 +19,9 @@ import 'rutinas_screen.dart';
 ///
 /// También hace de "centro de avisos" mientras la app está abierta
 /// (Historias 014 y 015):
-///  - Entrenadores y admins: cada 15 segundos revisa si llegó una solicitud
-///    de ayuda nueva, la avisa y muestra el número pendiente en "Perfil".
+///  - Entrenadores y admins: cada 10 segundos revisa si llegó una solicitud
+///    de ayuda nueva, la muestra a pantalla completa y deja el número
+///    pendiente en "Perfil".
 ///  - Socios con una solicitud pendiente: avisa cuando un entrenador la atiende.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,7 +31,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _intervalo = Duration(seconds: 15);
+  static const _intervalo = Duration(seconds: 10);
 
   final _api = ApiService.instance;
   int _pestana = 0;
@@ -42,6 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Socio
   int? _solicitudEsperando; // id de la solicitud pendiente del socio
+
+  // Chat: mensajes sin leer vistos en la revisión anterior (para avisar solo de los nuevos)
+  final Map<int, int> _sinLeerVisto = {};
 
   @override
   void initState() {
@@ -70,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _revisar() async {
     final u = _usuario;
     if (u == null || _revisando || !mounted) return;
+    if (_alertaAbierta) return;
     _revisando = true;
     try {
       if (u.esPersonalGimnasio) {
@@ -87,8 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _revisarBandeja() async {
     final bandeja = await _api.bandejaAyuda();
     if (!mounted) return;
+    // Al abrir la app se avisa de las que ya estaban esperando
     final nuevas = _ultimoIdVisto == null
-        ? <SolicitudAyuda>[]
+        ? bandeja.pendientes
         : bandeja.pendientes.where((s) => s.id > _ultimoIdVisto!).toList();
     setState(() {
       _pendientes = bandeja.pendientes.length;
@@ -96,17 +104,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ? bandeja.ultimoId
           : (_ultimoIdVisto ?? 0);
     });
-    if (nuevas.isNotEmpty) {
-      final s = nuevas.last;
-      final detalle = s.ejercicio == null ? s.motivoTexto : '${s.motivoTexto} (${s.ejercicio})';
-      _avisar(
-        icono: Icons.support_agent,
-        texto: nuevas.length == 1
-            ? '${s.socio ?? 'Un socio'} pide ayuda: $detalle'
-            : '${nuevas.length} socios nuevos piden ayuda',
-        accion: 'Ver',
-        alTocar: () => _abrirPantalla(const BandejaAyudaScreen()),
-      );
+    if (nuevas.isNotEmpty && !_alertaAbierta) {
+      await _mostrarAlerta(nuevas.first, otras: bandeja.pendientes.length - 1);
+      return;
+    }
+
+    // Mensajes nuevos de socios en el chat de solicitudes ya conocidas
+    for (final s in bandeja.pendientes) {
+      final antes = _sinLeerVisto[s.id] ?? 0;
+      _sinLeerVisto[s.id] = s.sinLeerEntrenador;
+      if (s.sinLeerEntrenador > antes) {
+        _avisar(
+          icono: Icons.chat_bubble,
+          texto: '${s.socio ?? 'Un socio'} te escribió en el chat',
+          accion: 'Responder',
+          alTocar: () => _abrirPantalla(ChatAyudaScreen(solicitudId: s.id)),
+        );
+        break;
+      }
+    }
+  }
+
+  /// Alerta a pantalla completa para el entrenador (Historia 015).
+  bool _alertaAbierta = false;
+
+  Future<void> _mostrarAlerta(SolicitudAyuda s, {required int otras}) async {
+    _alertaAbierta = true;
+    final respuesta = await mostrarAlertaAyuda(context, s, otras: otras);
+    _alertaAbierta = false;
+    if (!mounted) return;
+    switch (respuesta) {
+      case RespuestaAlerta.atender:
+        try {
+          await _api.atenderAyuda(s.id);
+          if (!mounted) return;
+          _avisar(
+            icono: Icons.check_circle,
+            texto: 'Solicitud de ${s.socio ?? 'el socio'} marcada como atendida',
+            accion: 'Ver',
+            alTocar: () => _abrirPantalla(const BandejaAyudaScreen()),
+          );
+        } catch (_) {
+          // Si otro entrenador ya la atendió, la bandeja lo mostrará
+        }
+        _revisar();
+      case RespuestaAlerta.chat:
+        await _abrirPantalla(ChatAyudaScreen(solicitudId: s.id));
+      case RespuestaAlerta.verTodas:
+        await _abrirPantalla(const BandejaAyudaScreen());
+      case RespuestaAlerta.despues:
+        break;
     }
   }
 
@@ -127,6 +174,21 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     _solicitudEsperando = mis.activa?.id;
+
+    // ¿El entrenador escribió en el chat?
+    final activa = mis.activa;
+    if (activa != null) {
+      final antes = _sinLeerVisto[activa.id] ?? 0;
+      _sinLeerVisto[activa.id] = activa.sinLeerSocio;
+      if (activa.sinLeerSocio > antes) {
+        _avisar(
+          icono: Icons.chat_bubble,
+          texto: 'El entrenador te respondió',
+          accion: 'Leer',
+          alTocar: () => _abrirPantalla(ChatAyudaScreen(solicitudId: activa.id)),
+        );
+      }
+    }
   }
 
   void _avisar({

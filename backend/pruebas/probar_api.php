@@ -88,6 +88,7 @@ function limpiar(mysqli $conn): void
         $conn->query("DELETE re FROM rutina_ejercicios re JOIN rutinas r ON r.id = re.rutina_id WHERE r.usuario_id IN ($lista)");
         $conn->query("DELETE FROM solicitudes_ayuda WHERE usuario_id IN ($lista) OR atendida_por IN ($lista)");
         $conn->query("DELETE FROM historial_premium WHERE usuario_id IN ($lista) OR admin_id IN ($lista)");
+        $conn->query("DELETE FROM mensajes_ayuda WHERE usuario_id IN ($lista)");
         foreach (['ranking_posiciones', 'registros_peso', 'chat_mensajes', 'series_entrenamiento', 'ejercicios',
                   'rutinas', 'tokens', 'avatares', 'perfiles_entrenamiento'] as $tabla) {
             $conn->query("DELETE FROM $tabla WHERE usuario_id IN ($lista)");
@@ -342,6 +343,25 @@ try {
     comprobar("El entrenador recibe la solicitud con el nombre del socio y el motivo",
         ($pend['socio'] ?? '') === 'Ana Prueba' && ($pend['motivo'] ?? '') === 'tecnica' && ($pend['ejercicio'] ?? '') === 'Sentadilla', json_encode($r['json']));
 
+    // Chat de la solicitud
+    $r = api('POST', 'ayuda/enviar_mensaje.php', ["id" => $id_solicitud, "texto" => "Voy en 2 minutos, termina tu serie"], $tCoach);
+    comprobar("El entrenador responde por el chat de la solicitud", $r['codigo'] === 201, json_encode($r['json']));
+    $r = api('GET', 'ayuda/mis_solicitudes.php', null, $tA);
+    comprobar("El socio ve que tiene 1 mensaje sin leer", ($r['json']['activa']['sin_leer_socio'] ?? 0) === 1);
+    $r = api('GET', 'ayuda/chat.php?id=' . $id_solicitud, null, $tA);
+    comprobar("El socio lee la conversación con el mensaje del entrenador",
+        count($r['json']['mensajes'] ?? []) === 1 && ($r['json']['mensajes'][0]['es_mio'] ?? true) === false
+        && ($r['json']['puede_escribir'] ?? false) === true, json_encode($r['json']));
+    $r = api('GET', 'ayuda/mis_solicitudes.php', null, $tA);
+    comprobar("Al abrir el chat el mensaje queda leído", ($r['json']['activa']['sin_leer_socio'] ?? 1) === 0);
+    api('POST', 'ayuda/enviar_mensaje.php', ["id" => $id_solicitud, "texto" => "Dale, gracias"], $tA);
+    $r = api('GET', 'ayuda/pendientes.php', null, $tCoach);
+    comprobar("El entrenador ve la respuesta sin leer del socio", ($r['json']['pendientes'][0]['sin_leer_entrenador'] ?? 0) === 1);
+    $r = api('GET', 'ayuda/chat.php?id=' . $id_solicitud, null, $tB);
+    comprobar("Otro socio no puede leer esa conversación", $r['codigo'] === 403);
+    $r = api('POST', 'ayuda/enviar_mensaje.php', ["id" => $id_solicitud, "texto" => "   "], $tA);
+    comprobar("No se pueden enviar mensajes vacíos", $r['codigo'] >= 400);
+
     $r = api('POST', 'ayuda/atender.php', ["id" => $id_solicitud], $tB);
     comprobar("Otro socio no puede marcarla como atendida", $r['codigo'] === 403);
     $r = api('POST', 'ayuda/atender.php', ["id" => $id_solicitud], $tCoach);
@@ -349,11 +369,16 @@ try {
     $r = api('POST', 'ayuda/atender.php', ["id" => $id_solicitud], $tCoach);
     comprobar("No se puede atender dos veces", $r['codigo'] === 409);
 
+    $r = api('POST', 'ayuda/enviar_mensaje.php', ["id" => $id_solicitud, "texto" => "Otra cosa"], $tA);
+    comprobar("Con la solicitud atendida el chat queda cerrado", $r['codigo'] === 409);
+
     $r = api('GET', 'ayuda/mis_solicitudes.php', null, $tA);
     $s = $r['json']['solicitudes'][0] ?? [];
     comprobar("El socio ve que su solicitud fue atendida y por quién",
         ($s['estado'] ?? '') === 'atendida' && ($s['entrenador'] ?? '') === 'Coach Prueba' && array_key_exists('activa', $r['json']) && $r['json']['activa'] === null);
 
+    $r = api('POST', 'ayuda/solicitar.php', ["motivo" => "consulta"], $tB);
+    comprobar("Una consulta (ej: mensualidad) exige escribir la pregunta", $r['codigo'] >= 400);
     $r = api('POST', 'ayuda/solicitar.php', ["motivo" => "maquina"], $tB);
     $r = api('POST', 'ayuda/cancelar.php', ["id" => $r['json']['solicitud']['id'] ?? 0], $tB);
     comprobar("El socio puede cancelar su solicitud", $r['codigo'] === 200);

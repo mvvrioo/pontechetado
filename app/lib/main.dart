@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -24,7 +25,7 @@ void main() {
 class PonteChetadoApp extends StatelessWidget {
   const PonteChetadoApp({super.key});
 
-  static const colorMarca = Colores.marca; // verde "chetado"
+  static const colorMarca = Colores.marca;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +34,14 @@ class PonteChetadoApp extends StatelessWidget {
       title: 'Ponte Chetado',
       debugShowCheckedModeBanner: false,
       theme: construirTema(),
+      // Toda la app en español de Chile: calendario, días, meses y botones del sistema
+      locale: const Locale('es', 'CL'),
+      supportedLocales: const [Locale('es', 'CL'), Locale('es')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const InicioScreen(),
     );
   }

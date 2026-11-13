@@ -7,6 +7,7 @@ import '../tema.dart';
 import '../utils.dart';
 import '../widgets/nivel.dart';
 import 'ayuda_screen.dart';
+import 'chat_ayuda_screen.dart';
 import 'chatbot_screen.dart';
 import 'ranking_screen.dart';
 
@@ -31,6 +32,7 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
   List<Ejercicio> _ejercicios = [];
   Progreso? _progreso;
   RutinaDetalle? _rutinaDelDia; // la rutina asignada al día de la semana elegido
+  MisSolicitudesAyuda? _ayuda; // para la tarjeta "¿Necesitas ayuda?" (solo socios)
   bool _cargando = true;
   bool _terminando = false;
   Object? _error;
@@ -67,8 +69,18 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
           ? null
           : await _api.detalleRutina(delDia.first.id);
 
+      MisSolicitudesAyuda? ayuda;
+      if (widget.esSocio) {
+        try {
+          ayuda = await _api.misSolicitudesAyuda();
+        } catch (_) {
+          ayuda = null; // la tarjeta de ayuda no es indispensable
+        }
+      }
+
       if (!mounted) return;
       setState(() {
+        _ayuda = ayuda;
         _entreno = resultados[0] as EntrenoDelDia;
         _volumenUltimos14 = resultados[1] as List<VolumenDia>;
         _ejercicios = resultados[2] as List<Ejercicio>;
@@ -413,18 +425,6 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
       appBar: AppBar(
         title: const Text('Entrenar'),
         actions: [
-          if (widget.esSocio)
-            IconButton(
-              tooltip: 'Pedir ayuda a un entrenador',
-              icon: const Icon(Icons.support_agent),
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AyudaScreen(ejercicios: _ejercicios)),
-                );
-                widget.alPedirAyuda?.call();
-              },
-            ),
           IconButton(
             tooltip: 'Asistente de ejercicios',
             icon: const Icon(Icons.smart_toy_outlined),
@@ -462,6 +462,7 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
             _selectorFecha(),
             const SizedBox(height: 12),
             _tarjetaDelDia(totalVolumen),
+            if (widget.esSocio && _viendoHoy) _tarjetaAyuda(),
             if (_rutinaDelDia != null && _rutinaDelDia!.ejercicios.isNotEmpty)
               _tarjetaPlanDelDia(_rutinaDelDia!),
             const SizedBox(height: 16),
@@ -574,6 +575,115 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
   bool get _viendoHoy =>
       _fecha.year == _hoy.year && _fecha.month == _hoy.month && _fecha.day == _hoy.day;
 
+  Future<void> _abrirAyuda() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AyudaScreen(ejercicios: _ejercicios)),
+    );
+    widget.alPedirAyuda?.call();
+    _cargarTodo();
+  }
+
+  /// Tarjeta visible en Entrenar para llamar a un entrenador (Historia 014).
+  /// Si ya pidió ayuda, muestra que un entrenador viene en camino.
+  Widget _tarjetaAyuda() {
+    final activa = _ayuda?.activa;
+    final gimnasio = _ayuda?.gimnasio;
+
+    if (activa != null) {
+      return Card(
+        color: Colores.marcaTenue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colores.marca, width: 1.5),
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+          title: Text(
+            activa.sinLeerSocio > 0
+                ? 'El entrenador te respondió'
+                : activa.motivo == 'consulta'
+                    ? 'Tu consulta fue enviada'
+                    : 'Un entrenador viene en camino',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            activa.sinLeerSocio > 0
+                ? 'Toca para leer el mensaje'
+                : activa.ejercicio == null
+                    ? '${activa.motivoTexto} · toca para abrir el chat'
+                    : '${activa.motivoTexto} · ${activa.ejercicio}',
+          ),
+          trailing: Badge(
+            isLabelVisible: activa.sinLeerSocio > 0,
+            label: Text('${activa.sinLeerSocio}'),
+            child: const Icon(Icons.chat_bubble_outline),
+          ),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ChatAyudaScreen(solicitudId: activa.id)),
+            );
+            widget.alPedirAyuda?.call();
+            _cargarTodo();
+          },
+        ),
+      );
+    }
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: _abrirAyuda,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: Colores.degradado,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.support_agent, color: Colores.sobreMarca, size: 30),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '¿Necesitas ayuda?',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      gimnasio == null
+                          ? 'Llama a un entrenador de tu gimnasio'
+                          : 'Llama a un entrenador de $gimnasio',
+                      style: const TextStyle(color: Colores.textoSuave),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _abrirAyuda,
+                child: const Text('Llamar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Cierra el entrenamiento de hoy: muestra el resumen y recalcula el
   /// ranking del gimnasio para avisar si el usuario subió o bajó de puesto.
   Future<void> _terminarEntrenamiento() async {
@@ -673,7 +783,7 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF26330F), Colores.superficie],
+          colors: [Colores.marcaProfunda, Colores.superficie],
         ),
         border: Border.all(color: Colores.marca.withValues(alpha: 0.3)),
       ),

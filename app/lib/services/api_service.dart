@@ -478,6 +478,16 @@ class ApiService {
     await _post('ayuda/atender.php', {'id': id});
   }
 
+  /// Chat de una solicitud de ayuda (al abrirlo se marcan como leídos los mensajes).
+  Future<ChatAyuda> chatAyuda(int solicitudId) async {
+    return ChatAyuda.fromJson(await _get('ayuda/chat.php?id=$solicitudId'));
+  }
+
+  Future<MensajeAyuda> enviarMensajeAyuda(int solicitudId, String texto) async {
+    final datos = await _post('ayuda/enviar_mensaje.php', {'id': solicitudId, 'texto': texto});
+    return MensajeAyuda.fromJson(datos['mensaje'] as Map<String, dynamic>);
+  }
+
   // ---- Solo superadmin (equipo PonteChetado) ----
   Future<String> crearGimnasio(String nombre, String direccion) async {
     final datos = await _post('superadmin/crear_gimnasio.php', {

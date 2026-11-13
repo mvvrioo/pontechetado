@@ -6,9 +6,10 @@ import '../models.dart';
 import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
+import 'chat_ayuda_screen.dart';
 
 /// El socio pide que un entrenador del gimnasio se acerque a ayudarlo
-/// y ve aquí cuando su solicitud fue atendida.
+/// (o le hace una consulta por chat) y ve aquí cuando fue atendida.
 class AyudaScreen extends StatefulWidget {
   /// Ejercicios del catálogo, para indicar con cuál necesita ayuda (opcional).
   final List<Ejercicio> ejercicios;
@@ -98,8 +99,8 @@ class _AyudaScreenState extends State<AyudaScreen> {
       return;
     }
     final mensaje = _mensajeCtrl.text.trim();
-    if (motivo == 'otro' && mensaje.isEmpty) {
-      mostrarMensaje(context, 'Cuéntale al entrenador en qué te puede ayudar');
+    if ((motivo == 'otro' || motivo == 'consulta') && mensaje.isEmpty) {
+      mostrarMensaje(context, 'Escribe tu consulta para el entrenador');
       return;
     }
 
@@ -125,6 +126,14 @@ class _AyudaScreenState extends State<AyudaScreen> {
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
+  }
+
+  Future<void> _abrirChat(SolicitudAyuda s) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChatAyudaScreen(solicitudId: s.id)),
+    );
+    _cargar(silencioso: true);
   }
 
   Future<void> _cancelar(SolicitudAyuda s) async {
@@ -166,7 +175,11 @@ class _AyudaScreenState extends State<AyudaScreen> {
           if (!d.puedePedir)
             const _AyudaBloqueada()
           else if (activa != null)
-            _TarjetaEnEspera(solicitud: activa, alCancelar: () => _cancelar(activa))
+            _TarjetaEnEspera(
+              solicitud: activa,
+              alCancelar: () => _cancelar(activa),
+              alAbrirChat: () => _abrirChat(activa),
+            )
           else
             _formulario(d),
           if (anteriores.isNotEmpty) ...[
@@ -177,7 +190,8 @@ class _AyudaScreenState extends State<AyudaScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
             ),
-            for (final s in anteriores) _TarjetaSolicitud(solicitud: s),
+            for (final s in anteriores)
+              _TarjetaSolicitud(solicitud: s, alTocar: () => _abrirChat(s)),
           ],
         ],
       ),
@@ -205,7 +219,10 @@ class _AyudaScreenState extends State<AyudaScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Un entrenador de ${d.gimnasio ?? 'tu gimnasio'} recibe tu solicitud y se acerca a ayudarte.',
+              _motivo == 'consulta'
+                  ? 'Un entrenador de ${d.gimnasio ?? 'tu gimnasio'} te responde por chat, sin que tengas que moverte.'
+                  : 'Un entrenador de ${d.gimnasio ?? 'tu gimnasio'} recibe tu solicitud y se acerca a ayudarte. '
+                      'También pueden conversar por chat.',
               style: const TextStyle(color: Colores.textoSuave),
             ),
             const SizedBox(height: 14),
@@ -242,8 +259,14 @@ class _AyudaScreenState extends State<AyudaScreen> {
               minLines: 2,
               maxLines: 4,
               decoration: InputDecoration(
-                labelText: _motivo == 'otro' ? 'Cuéntanos qué necesitas' : 'Detalle (opcional)',
-                hintText: 'Ej: estoy en el rack 2, no sé cuánto bajar en la sentadilla',
+                labelText: _motivo == 'consulta'
+                    ? 'Escribe tu consulta'
+                    : _motivo == 'otro'
+                        ? 'Cuéntanos qué necesitas'
+                        : 'Detalle (opcional)',
+                hintText: _motivo == 'consulta'
+                    ? 'Ej: ¿hasta qué día puedo pagar la mensualidad?'
+                    : 'Ej: estoy en el rack 2, no sé cuánto bajar en la sentadilla',
                 alignLabelWithHint: true,
                 counterText: '',
               ),
@@ -252,7 +275,13 @@ class _AyudaScreenState extends State<AyudaScreen> {
             FilledButton.icon(
               onPressed: _enviando ? null : _enviar,
               icon: const Icon(Icons.front_hand),
-              label: Text(_enviando ? 'Enviando...' : 'Pedir ayuda'),
+              label: Text(
+                _enviando
+                    ? 'Enviando...'
+                    : _motivo == 'consulta'
+                        ? 'Enviar consulta'
+                        : 'Pedir ayuda',
+              ),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             ),
           ],
@@ -273,13 +302,18 @@ String _detalleDe(SolicitudAyuda s) => [
 class _TarjetaEnEspera extends StatelessWidget {
   final SolicitudAyuda solicitud;
   final VoidCallback alCancelar;
+  final VoidCallback alAbrirChat;
 
-  const _TarjetaEnEspera({required this.solicitud, required this.alCancelar});
+  const _TarjetaEnEspera({
+    required this.solicitud,
+    required this.alCancelar,
+    required this.alAbrirChat,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFF232E12),
+      color: Colores.marcaTenue,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
         side: const BorderSide(color: Colores.marca),
@@ -306,8 +340,11 @@ class _TarjetaEnEspera extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Los entrenadores ya recibieron tu solicitud. Quédate donde estás entrenando.',
+            Text(
+              solicitud.motivo == 'consulta'
+                  ? 'Los entrenadores ya recibieron tu consulta. Te responderán por el chat.'
+                  : 'Los entrenadores ya recibieron tu solicitud. Quédate donde estás entrenando '
+                      'o escríbeles por el chat.',
             ),
             const SizedBox(height: 12),
             Text(
@@ -318,7 +355,19 @@ class _TarjetaEnEspera extends StatelessWidget {
               const SizedBox(height: 4),
               Text('"${solicitud.mensaje}"', style: const TextStyle(fontStyle: FontStyle.italic)),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: alAbrirChat,
+              icon: Badge(
+                isLabelVisible: solicitud.sinLeerSocio > 0,
+                label: Text('${solicitud.sinLeerSocio}'),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+              label: Text(
+                solicitud.sinLeerSocio > 0 ? 'Ver respuesta del entrenador' : 'Abrir chat con el entrenador',
+              ),
+            ),
+            const SizedBox(height: 8),
             OutlinedButton(
               onPressed: alCancelar,
               child: const Text('Ya no necesito ayuda'),
@@ -332,8 +381,9 @@ class _TarjetaEnEspera extends StatelessWidget {
 
 class _TarjetaSolicitud extends StatelessWidget {
   final SolicitudAyuda solicitud;
+  final VoidCallback alTocar;
 
-  const _TarjetaSolicitud({required this.solicitud});
+  const _TarjetaSolicitud({required this.solicitud, required this.alTocar});
 
   @override
   Widget build(BuildContext context) {
@@ -351,6 +401,8 @@ class _TarjetaSolicitud extends StatelessWidget {
               ? 'Atendida${s.entrenador == null ? '' : ' por ${s.entrenador}'} · ${formatearFecha(s.creadaEn)}'
               : 'Cancelada · ${formatearFecha(s.creadaEn)}',
         ),
+        trailing: s.mensajesChat > 0 ? const Icon(Icons.chat_bubble_outline, size: 20) : null,
+        onTap: alTocar,
       ),
     );
   }

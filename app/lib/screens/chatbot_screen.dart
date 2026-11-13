@@ -285,7 +285,7 @@ class _Burbuja extends StatelessWidget {
       child: Text(
         texto,
         style: TextStyle(
-          color: esBot ? (suave ? Colores.textoSuave : Colores.texto) : Colors.black,
+          color: esBot ? (suave ? Colores.textoSuave : Colores.texto) : Colores.sobreMarca,
           fontStyle: suave ? FontStyle.italic : FontStyle.normal,
           height: 1.35,
         ),
@@ -302,7 +302,7 @@ class _Burbuja extends StatelessWidget {
             const CircleAvatar(
               radius: 15,
               backgroundColor: Colores.marca,
-              child: Icon(Icons.smart_toy, size: 18, color: Colors.black),
+              child: Icon(Icons.smart_toy, size: 18, color: Colores.sobreMarca),
             ),
             const SizedBox(width: 8),
           ],
