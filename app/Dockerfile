@@ -4,8 +4,8 @@
 #  2) La sirve con Nginx en http://localhost:8081 (ver docker-compose.yml)
 # =====================================================================
 
-# ---------- Etapa 1: compilar la app ----------
-FROM ghcr.io/cirruslabs/flutter:stable AS compilar
+# ---------- Etapa 1: compilar la app (misma versión de Flutter del proyecto) ----------
+FROM ghcr.io/cirruslabs/flutter:3.47.6 AS compilar
 
 # Dirección de la API que usará la app (la del contenedor "api")
 ARG API_URL=http://localhost:8080/PonteChetado/api

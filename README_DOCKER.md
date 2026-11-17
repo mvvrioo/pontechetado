@@ -22,7 +22,17 @@ un solo comando, sin instalar XAMPP ni configurar nada a mano.
 | `base_de_datos/datos_demo.sql` | Gimnasio y cuentas de demostración (también solo la primera vez) |
 | `backend/config/db.php` | Lee los datos de conexión desde variables de entorno (o usa los de XAMPP) |
 
-## Cómo levantarlo
+## Instalación con un clic
+
+1. Instalar **Docker Desktop** (https://www.docker.com/products/docker-desktop/) y abrirlo.
+2. Hacer doble clic en **`INSTALAR.bat`** (en la carpeta del proyecto).
+
+El archivo crea la contraseña de la base de datos, construye la app, la API y la base
+de datos (con el catálogo y las cuentas demo) y abre la app en el navegador.
+Para apagarlo: **`APAGAR.bat`**.
+
+## Cómo levantarlo a mano
+
 
 1. Instalar **Docker Desktop** (https://www.docker.com/products/docker-desktop/) y abrirlo.
 2. Crear el archivo de contraseña: en `C:\proyectos\ponte_chetado` ejecutar `copy .env.example .env`

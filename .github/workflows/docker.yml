@@ -21,8 +21,18 @@ jobs:
       - name: Crear .env
         run: echo "DB_PASSWORD=clave_de_prueba" > .env
 
+      - name: Construir las imágenes
+        run: |
+          set -o pipefail
+          docker compose build --progress plain 2>&1 | tee construir.log
+
+      - name: Mostrar el error de construcción
+        if: failure()
+        run: |
+          tail -60 construir.log | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' | sed 's/^/::error title=Error al construir::/'
+
       - name: Levantar los contenedores
-        run: docker compose up -d --build
+        run: docker compose up -d
 
       - name: Esperar la API
         run: |
@@ -52,4 +62,5 @@ jobs:
 
       - name: Registros si algo falla
         if: failure()
-        run: docker compose logs
+        run: |
+          docker compose logs --tail 40 2>&1 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' | sed 's/^/::error title=Registros de los contenedores::/'
