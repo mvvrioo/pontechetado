@@ -1,4 +1,0 @@
-Esta carpeta ya no es necesaria.
-
-Docker carga solo el archivo base_de_datos/instalacion_completa.sql
-la primera vez que se crea la base (ver README_DOCKER.md).

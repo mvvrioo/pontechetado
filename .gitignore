@@ -6,7 +6,11 @@ backend/config/db.php
 
 # Docker: contrasenas locales y respaldo de la base con datos de prueba
 .env
-base_de_datos/docker-init/*.sql
+base_de_datos/docker-init/
 
 # Script ya aplicado, borrado de GitHub a proposito: se queda solo en el PC
 base_de_datos/actualizacion_gimnasios_gamificacion.sql
+base_de_datos/actualizaciones/actualizacion_gimnasios_gamificacion.sql
+
+# Espacio de trabajo de VS Code (rutas propias de este PC)
+*.code-workspace

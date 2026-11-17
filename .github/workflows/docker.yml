@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - docker-compose.yml
+      - Docker/**
       - backend/**
       - app/**
       - base_de_datos/**
@@ -15,6 +15,9 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Docker
     steps:
       - uses: actions/checkout@v4
 

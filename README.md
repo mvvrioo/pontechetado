@@ -26,18 +26,26 @@ Roles: socio (gratis o Premium), entrenador, administrador del gimnasio y supera
 - **App (frontend):** Flutter, lenguaje Dart.
 - **API (backend):** PHP 8 con una API REST que responde JSON, sobre Apache.
 - **Base de datos:** MySQL 8.
-- **Entorno:** XAMPP para desarrollo local, o Docker (ver `README_DOCKER.md`).
+- **Entorno:** XAMPP para desarrollo local, o Docker (ver [`Docker/README_DOCKER.md`](Docker/README_DOCKER.md)).
 
 ## Estructura del repositorio
 
 | Carpeta | Contenido |
 |---|---|
+| `Fase 1/` | Evidencias de la Fase 1 (grupales e individuales) |
+| `Fase 2/` | Evidencias de la Fase 2: `Evidencias Proyecto` (Product Vision, Product Backlog, Definition of Done, Documento de Diseño, Plan y Resultados de Pruebas), `Evidencias Grupales` e `Evidencias Individuales` |
 | `app/` | Aplicación Flutter (`lib/screens`, `lib/widgets`, `lib/services`, `lib/models.dart`) |
 | `backend/` | API REST en PHP (`api/` con los endpoints, `config/` con la conexión y funciones compartidas, `pruebas/`) |
-| `base_de_datos/` | Scripts SQL |
-| `Fase 1/`, `Fase 2/` | Documentación del proyecto |
+| `base_de_datos/` | `instalacion_completa.sql` (crea todo), `datos_demo.sql` (cuentas de demostración) y `actualizaciones/` (scripts que se usaron durante el desarrollo) |
+| `Docker/` | Instalación con un clic: `INSTALAR.bat`, `APAGAR.bat`, `docker-compose.yml` y su guía |
+| `Videos/` | Video de demostración de la aplicación |
+| `.github/` | Prueba automática de la instalación con Docker |
 
-## Cómo levantar el proyecto localmente
+## Instalación rápida (Docker)
+
+Con Docker Desktop abierto, doble clic en `Docker/INSTALAR.bat`. Levanta la app, la API y la base de datos con cuentas de demostración y abre la app en http://localhost:8081. Más detalles en [`Docker/README_DOCKER.md`](Docker/README_DOCKER.md).
+
+## Cómo levantar el proyecto localmente (XAMPP)
 
 1. Clonar el repositorio.
 2. **Base de datos:** abrir `base_de_datos/instalacion_completa.sql` en MySQL Workbench y ejecutarlo. Crea la base `pontechetado` con todas las tablas y el catálogo.
@@ -52,8 +60,8 @@ Para probar en un teléfono físico, escribir la IP del computador en `app/lib/c
 
 | Tipo | Comando | Qué revisa |
 |---|---|---|
-| API (70 pruebas) | `C:\xampp\php\php.exe C:\xampp\htdocs\PonteChetado\pruebas\probar_api.php` | El flujo completo de las 15 historias contra la API real. Crea datos de prueba y los borra al terminar |
-| App (20 pruebas) | `flutter test` dentro de `app/` | Modelos, formato de datos, roles, ranking y solicitudes de ayuda |
+| API (86 pruebas) | `C:\xampp\php\php.exe C:\xampp\htdocs\PonteChetado\pruebas\probar_api.php` | El flujo completo de las 15 historias contra la API real. Crea datos de prueba y los borra al terminar |
+| App (23 pruebas) | `flutter test` dentro de `app/` | Modelos, formato de datos, roles, ranking, solicitudes de ayuda y rutinas básicas |
 | Código | `flutter analyze` dentro de `app/` | Errores y advertencias del código Dart |
 
 ## Integrantes

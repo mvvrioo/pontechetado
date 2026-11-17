@@ -14,10 +14,10 @@ un solo comando, sin instalar XAMPP ni configurar nada a mano.
 
 | Archivo | Para qué sirve |
 |---|---|
-| `docker-compose.yml` | Define los 3 servicios (`web`, `api` y `db`), sus puertos y cómo se conectan |
+| `Docker/docker-compose.yml` | Define los 3 servicios (`web`, `api` y `db`), sus puertos y cómo se conectan |
 | `app/Dockerfile` | Compila la app Flutter para web y la sirve con Nginx |
 | `backend/Dockerfile` | Receta de la imagen del backend: PHP + Apache + mysqli + mod_rewrite |
-| `.env` | Contraseña del MySQL de Docker (no se sube a GitHub) |
+| `Docker/.env` | Contraseña del MySQL de Docker (no se sube a GitHub) |
 | `base_de_datos/instalacion_completa.sql` | Tablas y catálogo que MySQL carga solo la primera vez |
 | `base_de_datos/datos_demo.sql` | Gimnasio y cuentas de demostración (también solo la primera vez) |
 | `backend/config/db.php` | Lee los datos de conexión desde variables de entorno (o usa los de XAMPP) |
@@ -25,7 +25,7 @@ un solo comando, sin instalar XAMPP ni configurar nada a mano.
 ## Instalación con un clic
 
 1. Instalar **Docker Desktop** (https://www.docker.com/products/docker-desktop/) y abrirlo.
-2. Hacer doble clic en **`INSTALAR.bat`** (en la carpeta del proyecto).
+2. Hacer doble clic en **`INSTALAR.bat`** (está en esta carpeta, `Docker`).
 
 El archivo crea la contraseña de la base de datos, construye la app, la API y la base
 de datos (con el catálogo y las cuentas demo) y abre la app en el navegador.
@@ -35,9 +35,9 @@ Para apagarlo: **`APAGAR.bat`**.
 
 
 1. Instalar **Docker Desktop** (https://www.docker.com/products/docker-desktop/) y abrirlo.
-2. Crear el archivo de contraseña: en `C:\proyectos\ponte_chetado` ejecutar `copy .env.example .env`
+2. Crear el archivo de contraseña: en `C:\proyectos\ponte_chetado\Docker` ejecutar `copy .env.example .env`
    (puedes cambiar la contraseña dentro de `.env`).
-3. En la terminal, dentro de `C:\proyectos\ponte_chetado`:
+3. En la terminal, dentro de `C:\proyectos\ponte_chetado\Docker`:
 
    ```
    docker compose up -d --build
@@ -84,5 +84,5 @@ Para correr las pruebas de la API contra Docker (necesita PHP instalado, por eje
 ```
 set DB_PORT=3308
 set DB_PASSWORD=la_de_tu_.env
-C:\xampp\php\php.exe backend\pruebas\probar_api.php http://localhost:8080/PonteChetado/api
+C:\xampp\php\php.exe ..\backend\pruebas\probar_api.php http://localhost:8080/PonteChetado/api
 ```

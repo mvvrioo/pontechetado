@@ -1,7 +1,8 @@
 # =====================================================================
 #  PonteChetado con Docker
 #  Levanta la app web, el backend (PHP + Apache) y la base de datos
-#  (MySQL 8) con un solo comando:   docker compose up -d --build
+#  (MySQL 8) con un solo comando (dentro de la carpeta Docker):   docker compose up -d --build
+#  o con doble clic en INSTALAR.bat
 #
 #  - App:    http://localhost:8081
 #  - API:    http://localhost:8080/PonteChetado/api
@@ -22,9 +23,9 @@ services:
       - "3308:3306"
     volumes:
       # Este script crea las tablas y el catálogo la PRIMERA vez que se crea la base
-      - ./base_de_datos/instalacion_completa.sql:/docker-entrypoint-initdb.d/01_instalacion.sql:ro
+      - ../base_de_datos/instalacion_completa.sql:/docker-entrypoint-initdb.d/01_instalacion.sql:ro
       # Cuentas de demostración (contraseña Chetado2026), también solo la primera vez
-      - ./base_de_datos/datos_demo.sql:/docker-entrypoint-initdb.d/02_datos_demo.sql:ro
+      - ../base_de_datos/datos_demo.sql:/docker-entrypoint-initdb.d/02_datos_demo.sql:ro
       # Los datos quedan guardados aunque apagues el contenedor
       - datos_mysql:/var/lib/mysql
     healthcheck:
@@ -34,7 +35,7 @@ services:
       retries: 30
 
   api:
-    build: ./backend
+    build: ../backend
     container_name: pontechetado-api
     restart: unless-stopped
     environment:
@@ -51,7 +52,7 @@ services:
 
   web:
     build:
-      context: ./app
+      context: ../app
       args:
         API_URL: http://localhost:8080/PonteChetado/api
     container_name: pontechetado-web
