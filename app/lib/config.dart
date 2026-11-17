@@ -11,9 +11,14 @@ class Config {
   /// Ejemplo: '192.168.1.15'. Déjalo vacío para emulador o Chrome.
   static const String ipManual = '';
 
+  /// Dirección de la API fijada al compilar (la usa la versión web de Docker:
+  /// flutter build web --dart-define=API_URL=...). Vacía = se usa lo de arriba.
+  static const String apiUrl = String.fromEnvironment('API_URL');
+
   static String get _puerto => usarDocker ? ':8080' : '';
 
   static String get baseUrl {
+    if (apiUrl.isNotEmpty) return apiUrl;
     if (ipManual.isNotEmpty) return 'http://$ipManual$_puerto/PonteChetado/api';
 
     // Chrome / web: el navegador corre en tu misma PC

@@ -1,0 +1,9 @@
+build
+.dart_tool
+android
+ios
+linux
+macos
+windows
+Dockerfile
+.dockerignore

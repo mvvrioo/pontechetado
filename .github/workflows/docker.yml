@@ -1,0 +1,55 @@
+# Prueba la instalación con Docker: levanta todo y corre las pruebas de la API.
+name: Instalación con Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docker-compose.yml
+      - backend/**
+      - app/**
+      - base_de_datos/**
+      - .github/workflows/docker.yml
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Crear .env
+        run: echo "DB_PASSWORD=clave_de_prueba" > .env
+
+      - name: Levantar los contenedores
+        run: docker compose up -d --build
+
+      - name: Esperar la API
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/PonteChetado/api/auth/perfil.php || true)
+            [ "$code" = "401" ] && echo "API lista" && exit 0
+            sleep 3
+          done
+          echo "La API no respondió"; exit 1
+
+      - name: Las cuentas demo pueden iniciar sesión
+        run: |
+          for c in superadmin admin entrenador usuario gratis; do
+            curl -s -X POST http://localhost:8080/PonteChetado/api/auth/login.php \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"$c.demo@pontechetado.test\",\"password\":\"Chetado2026\"}" | grep -q '"token"' \
+              && echo "OK $c" || { echo "Falla $c"; exit 1; }
+          done
+
+      - name: Pruebas de la API
+        run: docker compose exec -T api php /var/www/html/PonteChetado/pruebas/probar_api.php http://localhost/PonteChetado/api
+
+      - name: La app web responde y apunta a la API de Docker
+        run: |
+          curl -sf http://localhost:8081/ | grep -qi "flutter" && echo "App web OK"
+          curl -sf http://localhost:8081/main.dart.js | grep -q "localhost:8080/PonteChetado/api" && echo "Apunta a la API OK"
+
+      - name: Registros si algo falla
+        if: failure()
+        run: docker compose logs
