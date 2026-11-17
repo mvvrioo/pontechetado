@@ -424,7 +424,7 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
                 ),
                 subtitle: Text(
                   '${m.email}\n'
-                  '${m.esPremium ? 'Premium hasta el ${formatearFecha(m.premiumHasta!)}' : 'Sin Premium'}',
+                  '${m.esPremium ? 'Premium hasta el ${formatearFecha(m.premiumHasta!)}' : 'Sin Premium · esperando pago'}',
                 ),
                 isThreeLine: true,
                 trailing: PopupMenuButton<String>(
@@ -435,7 +435,7 @@ class _PanelGimnasioScreenState extends State<PanelGimnasioScreen> {
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'renovar',
-                      child: Text(m.esPremium ? 'Renovar / extender' : 'Activar de nuevo'),
+                      child: Text(m.esPremium ? 'Renovar / extender' : 'Activar Premium'),
                     ),
                     if (m.esPremium)
                       const PopupMenuItem(

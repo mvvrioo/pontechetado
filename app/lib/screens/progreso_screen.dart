@@ -577,8 +577,8 @@ class _TarjetaBloqueada extends StatelessWidget {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Paga tu membresía en un gimnasio asociado (pestaña '
-                      '"Gimnasios") y pide que te activen Premium con tu correo.',
+                      'Paga tu membresía en un gimnasio asociado (Perfil > '
+                      'Gimnasios) y pide que te activen Premium con tu correo.',
                     ),
                   ),
                 ],

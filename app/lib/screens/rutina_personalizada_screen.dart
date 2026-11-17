@@ -190,7 +190,7 @@ class _RutinaPersonalizadaScreenState extends State<RutinaPersonalizadaScreen> {
               ),
               subtitle: Text(
                 'Puedes ver cómo funciona, pero para crear tu rutina necesitas Premium. '
-                'Se activa en tu gimnasio (pestaña "Gimnasios").',
+                'Se activa en tu gimnasio (Perfil > Gimnasios).',
               ),
             ),
           ),

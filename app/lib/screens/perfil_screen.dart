@@ -7,9 +7,7 @@ import '../utils.dart';
 import '../widgets/avatar.dart';
 import '../widgets/nivel.dart';
 import 'avatar_screen.dart';
-import 'ayuda_screen.dart';
-import 'bandeja_ayuda_screen.dart';
-import 'chatbot_screen.dart';
+import 'gimnasios_screen.dart';
 import 'login_screen.dart';
 import 'panel_gimnasio_screen.dart';
 import 'superadmin_screen.dart';
@@ -216,7 +214,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ),
           ),
 
-          // ---- Avatar y asistente ----
+          // ---- Avatar y gimnasio ----
           Card(
             child: Column(
               children: [
@@ -233,35 +231,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(
-                  leading: const Icon(Icons.smart_toy_outlined, color: Colores.marca),
-                  title: const Text('Asistente de ejercicios'),
-                  subtitle: const Text('Dudas de técnica, series, descanso y más'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _abrir(const ChatbotScreen()),
-                ),
-                if (esCliente) ...[
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  ListTile(
-                    leading: const Icon(Icons.support_agent, color: Colores.marca),
-                    title: const Text('Pedir ayuda a un entrenador'),
-                    subtitle: const Text('Que un entrenador de tu gimnasio se acerque'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _abrir(const AyudaScreen()),
+                  leading: const Icon(Icons.storefront, color: Colores.marca),
+                  title: const Text('Gimnasios'),
+                  subtitle: Text(
+                    usuario.gimnasioNombre == null
+                        ? 'Gimnasios asociados y cómo activar Premium'
+                        : 'Tu gimnasio: ${usuario.gimnasioNombre}',
                   ),
-                ],
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _abrir(const GimnasiosScreen()),
+                ),
               ],
             ),
           ),
-          if (usuario.esEntrenador)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.support_agent, color: Colores.marca),
-                title: const Text('Solicitudes de ayuda'),
-                subtitle: Text('Socios de ${usuario.gimnasioNombre ?? 'tu gimnasio'} que piden un entrenador'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _abrir(const BandejaAyudaScreen()),
-              ),
-            ),
 
           // ---- Accesos de administración ----
           if (usuario.esSuperadmin)
@@ -335,7 +317,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     const SizedBox(height: 12),
                     const Text(
                       'Se activa en tu gimnasio: paga la membresía y dales tu correo '
-                      '(mira la pestaña "Gimnasios").',
+                      '(en Perfil > Gimnasios).',
                       style: TextStyle(color: Colores.textoSuave),
                     ),
                   ],

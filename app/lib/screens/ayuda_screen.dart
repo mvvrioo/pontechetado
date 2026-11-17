@@ -14,7 +14,10 @@ class AyudaScreen extends StatefulWidget {
   /// Ejercicios del catálogo, para indicar con cuál necesita ayuda (opcional).
   final List<Ejercicio> ejercicios;
 
-  const AyudaScreen({super.key, this.ejercicios = const []});
+  /// Motivo ya elegido al abrir (ej: 'consulta' desde "Consulta por chat").
+  final String? motivoInicial;
+
+  const AyudaScreen({super.key, this.ejercicios = const [], this.motivoInicial});
 
   @override
   State<AyudaScreen> createState() => _AyudaScreenState();
@@ -36,6 +39,7 @@ class _AyudaScreenState extends State<AyudaScreen> {
   void initState() {
     super.initState();
     _ejercicios = widget.ejercicios.where((e) => !e.bloqueado).toList();
+    _motivo = widget.motivoInicial;
     _cargar();
     // Mientras haya una solicitud pendiente se revisa cada 10 segundos
     // para avisar apenas el entrenador la marque como atendida.
@@ -152,7 +156,9 @@ class _AyudaScreenState extends State<AyudaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pedir ayuda')),
+      appBar: AppBar(
+        title: Text(widget.motivoInicial == 'consulta' ? 'Consulta por chat' : 'Llamar a un entrenador'),
+      ),
       body: _construirCuerpo(),
     );
   }
@@ -434,7 +440,7 @@ class _AyudaBloqueada extends StatelessWidget {
             Text(
               'Con Premium activo en tu gimnasio puedes pedir desde la app que un '
               'entrenador se acerque a corregir tu técnica o a orientarte con tu rutina.\n\n'
-              'Se activa pagando tu membresía en un gimnasio asociado (pestaña "Gimnasios").',
+              'Se activa pagando tu membresía en un gimnasio asociado (Perfil > Gimnasios).',
             ),
           ],
         ),

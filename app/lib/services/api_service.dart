@@ -273,6 +273,23 @@ class ApiService {
     });
   }
 
+  /// Rutinas básicas del plan gratis (H003).
+  Future<List<RutinaBasica>> rutinasBasicas() async {
+    final datos = await _get('rutinas/basicas.php');
+    return (datos['rutinas_basicas'] as List)
+        .map((e) => RutinaBasica.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Copia una rutina básica a "mis rutinas".
+  Future<String> usarRutinaBasica(String clave, {int? diaSemana}) async {
+    final datos = await _post('rutinas/usar_basica.php', {
+      'clave': clave,
+      'dia_semana': diaSemana,
+    });
+    return datos['mensaje'] as String? ?? 'Rutina agregada';
+  }
+
   /// Objetivos disponibles y lo que el usuario eligió la última vez.
   Future<OpcionesRutinaPersonalizada> opcionesRutinaPersonalizada() async {
     final datos = await _get('rutinas/personalizada.php');
@@ -371,6 +388,13 @@ class ApiService {
     return (datos['gimnasios'] as List)
         .map((g) => Gimnasio.fromJson(g as Map<String, dynamic>))
         .toList();
+  }
+
+  /// H005: el socio elige su gimnasio y el sistema verifica su membresía.
+  /// Devuelve el mensaje y si quedó con Premium.
+  Future<(String, bool)> vincularGimnasio(int gimnasioId) async {
+    final datos = await _post('gimnasios/vincular.php', {'gimnasio_id': gimnasioId});
+    return (datos['mensaje'] as String? ?? '', datos['es_premium'] as bool? ?? false);
   }
 
   /// Panel del admin. El superadmin pasa [gimnasioId] para ver cualquier gimnasio.

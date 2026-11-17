@@ -154,6 +154,20 @@ try {
     $r = api('GET', 'ejercicios/listar.php', null, $tA);
     comprobar("Se lista el catálogo de ejercicios", count($r['json']['ejercicios'] ?? []) > 10);
 
+    $tLibre = registrar_cuenta('libre', 'Libre Prueba');
+    $r = api('GET', 'rutinas/basicas.php', null, $tLibre);
+    $basicas = $r['json']['rutinas_basicas'] ?? [];
+    $solo_gratis = true;
+    foreach ($basicas as $rb) {
+        if (count($rb['ejercicios']) === 0 || count($rb['ejercicios']) > 6) $solo_gratis = false;
+    }
+    comprobar("El plan gratis ve 3 rutinas básicas listas para usar", count($basicas) === 3 && $solo_gratis, json_encode($r['json']));
+    $r = api('POST', 'rutinas/usar_basica.php', ["clave" => "full_body", "dia_semana" => 1], $tLibre);
+    comprobar("Un socio gratis puede usar una rutina básica", $r['codigo'] === 201, json_encode($r['json']));
+    $r = api('GET', 'rutinas/listar.php', null, $tLibre);
+    comprobar("La rutina básica queda en sus rutinas con sus ejercicios",
+        count($r['json']['rutinas'] ?? []) === 1 && ($r['json']['rutinas'][0]['total_ejercicios'] ?? 0) === 6);
+
     $r = api('POST', 'rutinas/generar.php', ["objetivo" => "fuerza", "dias" => [1, 3, 5]], $tA);
     comprobar("La rutina personalizada está bloqueada sin Premium", $r['codigo'] === 403 && ($r['json']['requiere_premium'] ?? false));
 
@@ -181,6 +195,13 @@ try {
     $tB = registrar_cuenta('beto', 'Beto Prueba');
     $tC = registrar_cuenta('caro', 'Caro Prueba');
 
+    $r = api('POST', 'gimnasios/vincular.php', ["gimnasio_id" => $gimnasio_id], $tSinPremium);
+    comprobar("El socio elige su gimnasio en la app y queda vinculado sin Premium hasta pagar",
+        $r['codigo'] === 200 && ($r['json']['es_premium'] ?? true) === false
+            && ($r['json']['usuario']['gimnasio']['id'] ?? 0) === $gimnasio_id, json_encode($r['json']));
+    $r = api('POST', 'gimnasios/vincular.php', ["gimnasio_id" => 999999], $tSinPremium);
+    comprobar("No se puede elegir un gimnasio que no existe", $r['codigo'] === 404);
+
     $r = api('POST', 'admin/activar_premium.php', ["email" => 'ana' . DOMINIO_PRUEBA, "meses" => 1], $tA);
     comprobar("Un socio no puede activarse Premium a sí mismo", $r['codigo'] === 403);
 
@@ -195,6 +216,15 @@ try {
     $r = api('GET', 'auth/perfil.php', null, $tA);
     comprobar("El socio queda Premium y asociado a su gimnasio",
         ($r['json']['usuario']['es_premium'] ?? false) && ($r['json']['usuario']['gimnasio']['id'] ?? 0) === $gimnasio_id);
+
+    $r = api('POST', 'gimnasios/vincular.php', ["gimnasio_id" => $gimnasio_id], $tA);
+    comprobar("Al elegir su gimnasio se verifica la membresía pagada con su correo",
+        $r['codigo'] === 200 && ($r['json']['es_premium'] ?? false) === true, json_encode($r['json']));
+    $otro = (int)($conn->query("SELECT id FROM gimnasios WHERE id <> $gimnasio_id ORDER BY id LIMIT 1")->fetch_row()[0] ?? 0);
+    if ($otro > 0) {
+        $r = api('POST', 'gimnasios/vincular.php', ["gimnasio_id" => $otro], $tA);
+        comprobar("Con Premium vigente no puede cambiarse a otro gimnasio", $r['codigo'] === 409);
+    }
 
     $r = api('GET', 'admin/gimnasio.php', null, $tAdmin);
     comprobar("El panel del gimnasio muestra sus 3 miembros Premium", ($r['json']['gimnasio']['miembros_premium'] ?? 0) === 3);

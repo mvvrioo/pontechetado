@@ -361,7 +361,7 @@ class _RankingBloqueado extends StatelessWidget {
             const SizedBox(height: 10),
             const Text(
               'El ranking compara tus marcas con los socios de tu mismo gimnasio. '
-              'Paga tu membresía en un gimnasio asociado (pestaña "Gimnasios") y '
+              'Paga tu membresía en un gimnasio asociado (Perfil > Gimnasios) y '
               'pide que activen Premium con tu correo.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colores.textoSuave),

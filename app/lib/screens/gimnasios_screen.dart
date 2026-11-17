@@ -62,6 +62,57 @@ class _GimnasiosScreenState extends State<GimnasiosScreen> {
     _cargar();
   }
 
+  /// H005: el socio elige su gimnasio y el sistema revisa si ya pagó su membresía.
+  Future<void> _elegir(Gimnasio g) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('¿Entrenas en ${g.nombre}?'),
+        content: const Text(
+          'Quedará como tu gimnasio. Revisaremos si ya registraron una membresía '
+          'pagada con tu correo para activar tu Premium.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sí, es mi gimnasio'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+    try {
+      final (mensaje, premium) = await _api.vincularGimnasio(g.id);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: Icon(
+            premium ? Icons.workspace_premium : Icons.storefront,
+            color: premium ? Colores.premium : Colores.marca,
+            size: 40,
+          ),
+          title: Text(premium ? '¡Premium activo!' : 'Gimnasio elegido'),
+          content: Text(mensaje),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+      _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      mostrarError(context, e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,7 +181,14 @@ class _GimnasiosScreenState extends State<GimnasiosScreen> {
                 child: Text('Aún no hay gimnasios registrados.'),
               ),
             ),
-          for (final g in _gimnasios) _TarjetaGimnasio(gimnasio: g),
+          for (final g in _gimnasios)
+            _TarjetaGimnasio(
+              gimnasio: g,
+              // El socio puede elegir su gimnasio (si tiene Premium vigente, se queda en el suyo)
+              alElegir: u.esCliente && !g.esMiGimnasio && !(u.esPremium && u.gimnasioNombre != null)
+                  ? () => _elegir(g)
+                  : null,
+            ),
         ],
       ),
     );
@@ -198,11 +256,11 @@ class _TarjetaMembresia extends StatelessWidget {
           ? 'Disfruta todas las funciones'
           : 'Vence el ${formatearFecha(usuario.premiumHasta!)}. Para renovarlo, paga la membresía en uno de estos gimnasios.';
     } else if (tieneGimnasio) {
-      titulo = 'Tu Premium en ${usuario.gimnasioNombre} venció';
-      detalle = 'Renueva tu membresía en el gimnasio y pide que la activen con tu correo:';
+      titulo = 'Premium pendiente en ${usuario.gimnasioNombre}';
+      detalle = 'Aún no hay una membresía pagada vigente con tu correo. Paga en recepción y pide que la activen con:';
     } else {
       titulo = 'Activa Premium con tu gimnasio';
-      detalle = 'Paga la membresía en uno de los gimnasios de abajo y en recepción dales este correo:';
+      detalle = 'Elige tu gimnasio abajo con "Es mi gimnasio". Paga la membresía en recepción y dales este correo:';
     }
 
     return Card(
@@ -269,8 +327,9 @@ class _TarjetaMembresia extends StatelessWidget {
 
 class _TarjetaGimnasio extends StatelessWidget {
   final Gimnasio gimnasio;
+  final VoidCallback? alElegir;
 
-  const _TarjetaGimnasio({required this.gimnasio});
+  const _TarjetaGimnasio({required this.gimnasio, this.alElegir});
 
   @override
   Widget build(BuildContext context) {
@@ -355,6 +414,16 @@ class _TarjetaGimnasio extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (alElegir != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                        onPressed: alElegir,
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text('Es mi gimnasio'),
+                      ),
+                    ),
                 ],
               ),
             ),

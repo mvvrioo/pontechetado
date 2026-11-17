@@ -39,6 +39,76 @@ const LIMITE_RUTINAS_GRATIS = 3;
 const LIMITE_EJERCICIOS_POR_RUTINA_GRATIS = 6;
 const DIAS_SESION = 30;
 
+// ---------- Rutinas básicas (H003): disponibles para todos, también en el plan gratis ----------
+// Solo usan ejercicios gratis y respetan el máximo de ejercicios por rutina del plan gratis.
+const RUTINAS_BASICAS = [
+    [
+        "clave"       => "full_body",
+        "nombre"      => "Full body principiante",
+        "descripcion" => "Todo el cuerpo en una sesión. Ideal 3 veces por semana.",
+        "ejercicios"  => [
+            ["Sentadilla goblet", 3, 12], ["Press de banca", 3, 10], ["Jalón al pecho", 3, 12],
+            ["Press militar", 3, 10], ["Puente de glúteo", 3, 12], ["Crunch abdominal", 3, 15],
+        ],
+    ],
+    [
+        "clave"       => "tren_superior",
+        "nombre"      => "Tren superior básico",
+        "descripcion" => "Pecho, espalda, hombros y brazos.",
+        "ejercicios"  => [
+            ["Press de banca", 3, 10], ["Remo con barra", 3, 10], ["Press militar", 3, 10],
+            ["Jalón al pecho", 3, 12], ["Curl con barra", 3, 12], ["Extensión de tríceps en polea", 3, 12],
+        ],
+    ],
+    [
+        "clave"       => "tren_inferior",
+        "nombre"      => "Tren inferior básico",
+        "descripcion" => "Piernas y glúteos.",
+        "ejercicios"  => [
+            ["Sentadilla", 4, 8], ["Prensa de piernas", 3, 12], ["Peso muerto", 3, 8],
+            ["Zancadas", 3, 10], ["Curl femoral", 3, 12], ["Elevación de talones", 3, 15],
+        ],
+    ],
+];
+
+/**
+ * Rutinas básicas con los ejercicios ya buscados en el catálogo (solo ejercicios gratis).
+ * Si algún ejercicio no existe en la base de datos, simplemente no se incluye.
+ */
+function rutinas_basicas(mysqli $conn): array
+{
+    $stmt = $conn->prepare(
+        "SELECT id, nombre, grupo_muscular FROM ejercicios
+          WHERE nombre = ? AND usuario_id IS NULL AND es_premium = 0
+          ORDER BY id LIMIT 1"
+    );
+    $lista = [];
+    foreach (RUTINAS_BASICAS as $r) {
+        $ejercicios = [];
+        foreach ($r['ejercicios'] as [$nombre, $series, $reps]) {
+            $stmt->bind_param("s", $nombre);
+            $stmt->execute();
+            $e = $stmt->get_result()->fetch_assoc();
+            if ($e) {
+                $ejercicios[] = [
+                    "ejercicio_id"   => (int)$e['id'],
+                    "nombre"         => $e['nombre'],
+                    "grupo_muscular" => $e['grupo_muscular'],
+                    "series"         => $series,
+                    "repeticiones"   => $reps,
+                ];
+            }
+        }
+        $lista[] = [
+            "clave"       => $r['clave'],
+            "nombre"      => $r['nombre'],
+            "descripcion" => $r['descripcion'],
+            "ejercicios"  => $ejercicios,
+        ];
+    }
+    return $lista;
+}
+
 // ---------- Rutinas personalizadas: cuántos días por semana se pueden elegir ----------
 const DIAS_RUTINA_MIN = 2;
 const DIAS_RUTINA_MAX = 6;

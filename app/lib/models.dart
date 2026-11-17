@@ -252,6 +252,51 @@ class Rutina {
   );
 }
 
+/// Rutina básica lista para usar, disponible también en el plan gratis (H003).
+class RutinaBasica {
+  final String clave;
+  final String nombre;
+  final String descripcion;
+  final List<EjercicioBasico> ejercicios;
+
+  RutinaBasica({
+    required this.clave,
+    required this.nombre,
+    required this.descripcion,
+    required this.ejercicios,
+  });
+
+  factory RutinaBasica.fromJson(Map<String, dynamic> json) => RutinaBasica(
+    clave: json['clave'] as String,
+    nombre: json['nombre'] as String,
+    descripcion: json['descripcion'] as String? ?? '',
+    ejercicios: ((json['ejercicios'] as List?) ?? [])
+        .map((e) => EjercicioBasico.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
+}
+
+class EjercicioBasico {
+  final String nombre;
+  final String grupoMuscular;
+  final int series;
+  final int repeticiones;
+
+  EjercicioBasico({
+    required this.nombre,
+    required this.grupoMuscular,
+    required this.series,
+    required this.repeticiones,
+  });
+
+  factory EjercicioBasico.fromJson(Map<String, dynamic> json) => EjercicioBasico(
+    nombre: json['nombre'] as String,
+    grupoMuscular: json['grupo_muscular'] as String? ?? '',
+    series: json['series'] as int,
+    repeticiones: json['repeticiones'] as int,
+  );
+}
+
 /// Un ejercicio ya agregado a una rutina (con sus series y repeticiones).
 class EjercicioRutina {
   final int id; // id dentro de la rutina (para quitarlo)

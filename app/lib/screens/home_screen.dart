@@ -7,10 +7,10 @@ import '../services/api_service.dart';
 import '../tema.dart';
 import '../widgets/alerta_ayuda.dart';
 import 'ayuda_screen.dart';
+import 'ayuda_tab_screen.dart';
 import 'bandeja_ayuda_screen.dart';
 import 'chat_ayuda_screen.dart';
 import 'entrenar_screen.dart';
-import 'gimnasios_screen.dart';
 import 'perfil_screen.dart';
 import 'progreso_screen.dart';
 import 'rutinas_screen.dart';
@@ -21,7 +21,7 @@ import 'rutinas_screen.dart';
 /// (Historias 014 y 015):
 ///  - Entrenadores y admins: cada 10 segundos revisa si llegó una solicitud
 ///    de ayuda nueva, la muestra a pantalla completa y deja el número
-///    pendiente en "Perfil".
+///    pendiente en la pestaña "Ayuda".
 ///  - Socios con una solicitud pendiente: avisa cuando un entrenador la atiende.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,7 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _reloj;
   bool _revisando = false;
 
-  // Personal del gimnasio
+  // Personal del gimnasio: solicitudes pendientes. Socio: mensajes sin leer.
+  // Se muestra como número en la pestaña "Ayuda".
   int _pendientes = 0;
   int? _ultimoIdVisto; // null = todavía no hace la primera revisión
 
@@ -174,6 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     _solicitudEsperando = mis.activa?.id;
+    final sinLeer = mis.activa?.sinLeerSocio ?? 0;
+    if (sinLeer != _pendientes) setState(() => _pendientes = sinLeer);
 
     // ¿El entrenador escribió en el chat?
     final activa = mis.activa;
@@ -230,7 +233,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       const RutinasScreen(),
       const ProgresoScreen(),
-      const GimnasiosScreen(),
+      // Pestaña Ayuda: el entrenador ve su bandeja; el socio, sus opciones de ayuda
+      if (_usuario != null && _usuario!.esPersonalGimnasio)
+        const BandejaAyudaScreen()
+      else
+        AyudaTabScreen(alCambiar: () => _revisar()),
       const PerfilScreen(),
     ];
 
@@ -258,22 +265,22 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.emoji_events),
             label: 'Progreso',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
-            label: 'Gimnasios',
-          ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: _pendientes > 0,
               label: Text('$_pendientes'),
-              child: const Icon(Icons.person_outline),
+              child: const Icon(Icons.support_agent),
             ),
             selectedIcon: Badge(
               isLabelVisible: _pendientes > 0,
               label: Text('$_pendientes'),
-              child: const Icon(Icons.person),
+              child: const Icon(Icons.support_agent),
             ),
+            label: 'Ayuda',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
             label: 'Perfil',
           ),
         ],

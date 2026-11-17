@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../tema.dart';
 import '../utils.dart';
 import 'rutina_detalle_screen.dart';
+import 'rutinas_basicas_screen.dart';
 import 'rutina_personalizada_screen.dart';
 
 /// Rutinas organizadas por día de la semana (lunes: pecho y espalda, etc.).
@@ -126,6 +127,14 @@ class _RutinasScreenState extends State<RutinasScreen> {
     _cargar(); // al volver, mostrar las rutinas nuevas
   }
 
+  Future<void> _abrirBasicas() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RutinasBasicasScreen()),
+    );
+    _cargar(); // al volver, mostrar la rutina básica que eligió
+  }
+
   Future<void> _abrir(Rutina r) async {
     await Navigator.push(
       context,
@@ -171,7 +180,22 @@ class _RutinasScreenState extends State<RutinasScreen> {
             ),
           _TarjetaPersonalizada(
             tieneRutina: _rutinas.any((r) => r.generada),
+            bloqueada: _limite != null,
             alTocar: _abrirPersonalizada,
+          ),
+          Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              leading: const Icon(Icons.list_alt, color: Colores.marca, size: 28),
+              title: const Text(
+                'Rutinas básicas',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text('Full body, tren superior y tren inferior. Incluidas en el plan gratis'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _abrirBasicas,
+            ),
           ),
           // Lunes a domingo, siempre visibles para armar la semana
           for (var dia = 1; dia <= 7; dia++)
@@ -235,9 +259,14 @@ class _RutinasScreenState extends State<RutinasScreen> {
 /// Acceso a "Rutina personalizada" (elegir objetivo y días).
 class _TarjetaPersonalizada extends StatelessWidget {
   final bool tieneRutina;
+  final bool bloqueada; // plan gratis: se ve, pero es Premium
   final VoidCallback alTocar;
 
-  const _TarjetaPersonalizada({required this.tieneRutina, required this.alTocar});
+  const _TarjetaPersonalizada({
+    required this.tieneRutina,
+    required this.bloqueada,
+    required this.alTocar,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -257,12 +286,17 @@ class _TarjetaPersonalizada extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          tieneRutina
-              ? 'Toca para cambiar tu objetivo o tus días'
-              : 'Elige fuerza, hipertrofia, híbrido o salud y tus días, y te armamos la semana',
+          bloqueada
+              ? 'Función Premium: actívala en tu gimnasio'
+              : tieneRutina
+                  ? 'Toca para cambiar tu objetivo o tus días'
+                  : 'Elige fuerza, hipertrofia, híbrido o salud y tus días, y te armamos la semana',
           style: const TextStyle(color: Colores.sobreMarcaSuave),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colores.sobreMarca),
+        trailing: Icon(
+          bloqueada ? Icons.lock : Icons.chevron_right,
+          color: Colores.sobreMarca,
+        ),
         onTap: alTocar,
       ),
     );

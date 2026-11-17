@@ -280,4 +280,28 @@ void main() {
       expect(chat.mensajes.first.delSocio, isFalse);
     });
   });
+
+  group('Rutinas básicas (plan gratis)', () {
+    test('lee la rutina con sus ejercicios, series y repeticiones', () {
+      final r = RutinaBasica.fromJson({
+        'clave': 'full_body',
+        'nombre': 'Full body principiante',
+        'descripcion': 'Todo el cuerpo',
+        'ejercicios': [
+          {'ejercicio_id': 27, 'nombre': 'Sentadilla goblet', 'grupo_muscular': 'Pierna', 'series': 3, 'repeticiones': 12},
+          {'ejercicio_id': 1, 'nombre': 'Press de banca', 'grupo_muscular': 'Pecho', 'series': 3, 'repeticiones': 10},
+        ],
+      });
+      expect(r.clave, 'full_body');
+      expect(r.ejercicios.length, 2);
+      expect(r.ejercicios.first.series, 3);
+      expect(r.ejercicios.last.repeticiones, 10);
+    });
+
+    test('una rutina sin ejercicios no se cae', () {
+      final r = RutinaBasica.fromJson({'clave': 'x', 'nombre': 'X'});
+      expect(r.ejercicios, isEmpty);
+      expect(r.descripcion, '');
+    });
+  });
 }

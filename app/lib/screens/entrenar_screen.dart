@@ -8,7 +8,6 @@ import '../utils.dart';
 import '../widgets/nivel.dart';
 import 'ayuda_screen.dart';
 import 'chat_ayuda_screen.dart';
-import 'chatbot_screen.dart';
 import 'ranking_screen.dart';
 
 class EntrenarScreen extends StatefulWidget {
@@ -425,14 +424,6 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
       appBar: AppBar(
         title: const Text('Entrenar'),
         actions: [
-          IconButton(
-            tooltip: 'Asistente de ejercicios',
-            icon: const Icon(Icons.smart_toy_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChatbotScreen()),
-            ),
-          ),
           if (_progreso != null && !_progreso!.bloqueado)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -462,7 +453,7 @@ class _EntrenarScreenState extends State<EntrenarScreen> {
             _selectorFecha(),
             const SizedBox(height: 12),
             _tarjetaDelDia(totalVolumen),
-            if (widget.esSocio && _viendoHoy) _tarjetaAyuda(),
+            if (widget.esSocio && _viendoHoy && _ayuda?.activa != null) _tarjetaAyuda(),
             if (_rutinaDelDia != null && _rutinaDelDia!.ejercicios.isNotEmpty)
               _tarjetaPlanDelDia(_rutinaDelDia!),
             const SizedBox(height: 16),
