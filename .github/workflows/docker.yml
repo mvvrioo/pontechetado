@@ -24,7 +24,7 @@ jobs:
       - name: Construir las imágenes
         run: |
           set -o pipefail
-          docker compose build --progress plain 2>&1 | tee construir.log
+          docker compose --progress plain build 2>&1 | tee construir.log
 
       - name: Mostrar el error de construcción
         if: failure()
