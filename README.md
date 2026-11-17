@@ -33,7 +33,7 @@ Roles: socio (gratis o Premium), entrenador, administrador del gimnasio y supera
 | Carpeta | Contenido |
 |---|---|
 | `Fase 1/` | Evidencias de la Fase 1 (grupales e individuales) |
-| `Fase 2/` | Evidencias de la Fase 2: `Evidencias Proyecto` (Product Vision, Product Backlog, Definition of Done, Documento de Diseño, Plan y Resultados de Pruebas), `Evidencias Grupales` e `Evidencias Individuales` |
+| `Fase 2/` | Evidencias de la Fase 2: `Evidencias Proyecto` (Product Vision, Product Backlog, Definition of Done, Documento de Diseño, Plan y Resultados de Pruebas), `Evidencias Grupales` e `Evidencias Individules` |
 | `app/` | Aplicación Flutter (`lib/screens`, `lib/widgets`, `lib/services`, `lib/models.dart`) |
 | `backend/` | API REST en PHP (`api/` con los endpoints, `config/` con la conexión y funciones compartidas, `pruebas/`) |
 | `base_de_datos/` | `instalacion_completa.sql` (crea todo), `datos_demo.sql` (cuentas de demostración) y `actualizaciones/` (scripts que se usaron durante el desarrollo) |
