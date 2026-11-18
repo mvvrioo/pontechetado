@@ -76,9 +76,6 @@ XAMPP puede seguir instalado: Docker usa los puertos 8080 y 3308, así que no ch
 
 La base de Docker es independiente de la de XAMPP.
 
-Cada vez que se sube un cambio a GitHub, la acción "Instalación con Docker"
-levanta los 3 contenedores desde cero y corre todas las pruebas de la API.
-
 Para correr las pruebas de la API contra Docker (necesita PHP instalado, por ejemplo el de XAMPP):
 
 ```

@@ -39,22 +39,39 @@ Roles: socio (gratis o Premium), entrenador, administrador del gimnasio y supera
 | `base_de_datos/` | `instalacion_completa.sql` (crea todo), `datos_demo.sql` (cuentas de demostración) y `actualizaciones/` (scripts que se usaron durante el desarrollo) |
 | `Docker/` | Instalación con un clic: `INSTALAR.bat`, `APAGAR.bat`, `docker-compose.yml` y su guía |
 | `Videos/` | Video de demostración de la aplicación |
-| `.github/` | Prueba automática de la instalación con Docker |
 
-## Instalación rápida (Docker)
+## Cómo instalar
 
-Con Docker Desktop abierto, doble clic en `Docker/INSTALAR.bat`. Levanta la app, la API y la base de datos con cuentas de demostración y abre la app en http://localhost:8081. Más detalles en [`Docker/README_DOCKER.md`](Docker/README_DOCKER.md).
+Hay dos formas. La más simple es la primera.
 
-## Cómo levantar el proyecto localmente (XAMPP)
+### Opción 1 (recomendada): Docker, con un clic
+
+1. Instalar **Docker Desktop** (https://www.docker.com/products/docker-desktop/) y abrirlo.
+2. Hacer doble clic en **`Docker/INSTALAR.bat`**.
+3. Se abre la app en **http://localhost:8081**. La primera vez tarda unos minutos.
+
+Para apagarla: doble clic en `Docker/APAGAR.bat`. Más detalles en [`Docker/README_DOCKER.md`](Docker/README_DOCKER.md).
+
+### Opción 2: XAMPP (paso a paso)
 
 1. Clonar el repositorio.
-2. **Base de datos:** abrir `base_de_datos/instalacion_completa.sql` en MySQL Workbench y ejecutarlo. Crea la base `pontechetado` con todas las tablas y el catálogo.
+2. **Base de datos:** en MySQL Workbench ejecutar `base_de_datos/instalacion_completa.sql` (crea la base `pontechetado` con todas las tablas y el catálogo) y después `base_de_datos/datos_demo.sql` (crea las cuentas de demostración).
 3. **Backend:** copiar la carpeta `backend` dentro de `C:\xampp\htdocs` con el nombre `PonteChetado`. Luego copiar `config/db.example.php` como `config/db.php` y poner la contraseña de MySQL. Encender Apache en XAMPP.
 4. **App:** en la carpeta `app` ejecutar `flutter pub get` y después `flutter run -d chrome` (o en un emulador o teléfono).
-5. Registrarse en la app y, para administrar gimnasios, convertirse en superadmin desde Workbench:
-   `UPDATE usuarios SET rol = 'superadmin' WHERE email = 'tu@correo.cl';`
 
 Para probar en un teléfono físico, escribir la IP del computador en `app/lib/config.dart`.
+
+### Cuentas de demostración
+
+Sirven en las dos opciones. Todas usan la contraseña **Chetado2026**:
+
+| Rol | Correo |
+|---|---|
+| Superadmin | superadmin.demo@pontechetado.test |
+| Admin del gimnasio | admin.demo@pontechetado.test |
+| Entrenador | entrenador.demo@pontechetado.test |
+| Socio Premium | usuario.demo@pontechetado.test |
+| Socio gratis | gratis.demo@pontechetado.test |
 
 ## Pruebas
 
