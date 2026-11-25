@@ -165,6 +165,24 @@ class _AvatarScreenState extends State<AvatarScreen> {
           selected: {_config.genero},
           onSelectionChanged: (s) => _cambiar(_config.copyWith(genero: s.first)),
         ),
+        const _Titulo('Contextura'),
+        SegmentedButton<String>(
+          showSelectedIcon: false,
+          segments: [
+            for (var i = 0; i < contexturasAvatar.length; i++)
+              ButtonSegment(value: contexturasAvatar[i], label: Text(nombresContextura[i])),
+          ],
+          selected: {_config.contextura},
+          onSelectionChanged: (s) => _cambiar(_config.copyWith(contextura: s.first)),
+        ),
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text(
+            'Es el cuerpo con que partes. Al subir de nivel tu avatar se pone más chetado: '
+            'si es delgado gana músculo y si es grueso va bajando la panza.',
+            style: TextStyle(color: Colores.textoSuave, fontSize: 13),
+          ),
+        ),
         const _Titulo('Tono de piel'),
         _SelectorColor(
           colores: pielesAvatar,

@@ -19,6 +19,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 CREATE TABLE IF NOT EXISTS `avatares` (
   `usuario_id` int NOT NULL,
   `genero` enum('masculino','femenino') NOT NULL DEFAULT 'masculino',
+  `contextura` enum('delgada','media','gruesa') NOT NULL DEFAULT 'media',
   `piel` tinyint NOT NULL DEFAULT '1',
   `peinado` tinyint NOT NULL DEFAULT '0',
   `color_pelo` tinyint NOT NULL DEFAULT '0',

@@ -728,6 +728,7 @@ class OpcionesRutinaPersonalizada {
 // =====================================================================
 class AvatarConfig {
   final String genero; // 'masculino' o 'femenino'
+  final String contextura; // 'delgada', 'media' o 'gruesa' (cuerpo con que parte)
   final int piel; // índice en pielesAvatar
   final int peinado; // 0 corto, 1 rapado, 2 largo, 3 moño
   final int colorPelo;
@@ -735,6 +736,7 @@ class AvatarConfig {
 
   const AvatarConfig({
     this.genero = 'masculino',
+    this.contextura = 'media',
     this.piel = 1,
     this.peinado = 0,
     this.colorPelo = 0,
@@ -743,12 +745,14 @@ class AvatarConfig {
 
   AvatarConfig copyWith({
     String? genero,
+    String? contextura,
     int? piel,
     int? peinado,
     int? colorPelo,
     int? colorRopa,
   }) => AvatarConfig(
     genero: genero ?? this.genero,
+    contextura: contextura ?? this.contextura,
     piel: piel ?? this.piel,
     peinado: peinado ?? this.peinado,
     colorPelo: colorPelo ?? this.colorPelo,
@@ -757,6 +761,7 @@ class AvatarConfig {
 
   factory AvatarConfig.fromJson(Map<String, dynamic> json) => AvatarConfig(
     genero: json['genero'] as String,
+    contextura: json['contextura'] as String? ?? 'media',
     piel: json['piel'] as int,
     peinado: json['peinado'] as int,
     colorPelo: json['color_pelo'] as int,
@@ -765,6 +770,7 @@ class AvatarConfig {
 
   Map<String, dynamic> toJson() => {
     'genero': genero,
+    'contextura': contextura,
     'piel': piel,
     'peinado': peinado,
     'color_pelo': colorPelo,

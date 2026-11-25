@@ -291,10 +291,13 @@ try {
 
     // ================================================================
     seccion("6. Avatar (Historia 009)");
-    $r = api('POST', 'avatar/guardar.php', ["genero" => "femenino", "piel" => 1, "peinado" => 2, "color_pelo" => 1, "color_ropa" => 4], $tA);
+    $r = api('POST', 'avatar/guardar.php', ["genero" => "femenino", "contextura" => "gruesa", "piel" => 1, "peinado" => 2, "color_pelo" => 1, "color_ropa" => 4], $tA);
     comprobar("Se guarda el avatar personalizado", $r['codigo'] === 200);
     $r = api('GET', 'avatar/obtener.php', null, $tA);
     comprobar("El avatar guardado se recupera igual", ($r['json']['avatar']['genero'] ?? '') === 'femenino' && ($r['json']['avatar']['color_ropa'] ?? -1) === 4);
+    comprobar("Se guarda la contextura con que parte el avatar", ($r['json']['avatar']['contextura'] ?? '') === 'gruesa');
+    $r = api('POST', 'avatar/guardar.php', ["genero" => "masculino", "contextura" => "gigante", "piel" => 1, "peinado" => 2, "color_pelo" => 1, "color_ropa" => 4], $tA);
+    comprobar("Rechaza una contextura que no existe", $r['codigo'] === 400);
     $r = api('POST', 'avatar/guardar.php', ["genero" => "robot", "piel" => 1, "peinado" => 2, "color_pelo" => 1, "color_ropa" => 4], $tA);
     comprobar("Rechaza opciones de avatar inválidas", $r['codigo'] >= 400);
 

@@ -8,7 +8,7 @@ requerir_metodo('GET');
 $usuario = usuario_actual($conn);
 
 $stmt = $conn->prepare(
-    "SELECT genero, piel, peinado, color_pelo, color_ropa FROM avatares WHERE usuario_id = ?"
+    "SELECT genero, contextura, piel, peinado, color_pelo, color_ropa FROM avatares WHERE usuario_id = ?"
 );
 $stmt->bind_param("i", $usuario['id']);
 $stmt->execute();
@@ -18,6 +18,7 @@ responder([
     "es_premium" => es_premium($usuario),
     "avatar"     => $fila ? [
         "genero"     => $fila['genero'],
+        "contextura" => $fila['contextura'],
         "piel"       => (int)$fila['piel'],
         "peinado"    => (int)$fila['peinado'],
         "color_pelo" => (int)$fila['color_pelo'],

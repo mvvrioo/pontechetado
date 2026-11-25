@@ -304,4 +304,21 @@ void main() {
       expect(r.descripcion, '');
     });
   });
+
+  group('Contextura del avatar', () {
+    test('se lee y se guarda la contextura elegida', () {
+      final a = AvatarConfig.fromJson({
+        'genero': 'masculino', 'contextura': 'gruesa', 'piel': 1, 'peinado': 0, 'color_pelo': 0, 'color_ropa': 0,
+      });
+      expect(a.contextura, 'gruesa');
+      expect(a.toJson()['contextura'], 'gruesa');
+    });
+
+    test('un avatar guardado antes de esta opción parte con contextura media', () {
+      final a = AvatarConfig.fromJson({
+        'genero': 'femenino', 'piel': 1, 'peinado': 0, 'color_pelo': 0, 'color_ropa': 0,
+      });
+      expect(a.contextura, 'media');
+    });
+  });
 }

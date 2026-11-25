@@ -30,6 +30,11 @@ const ropasAvatar = [
 ];
 const peinadosAvatar = ['Corto', 'Rapado', 'Largo', 'Moño'];
 
+/// Contextura con que parte el avatar. Al subir de nivel todas terminan "chetadas":
+/// la delgada gana músculo, la gruesa pierde grasa y la media se marca.
+const contexturasAvatar = ['delgada', 'media', 'gruesa'];
+const nombresContextura = ['Delgada', 'Media', 'Gruesa'];
+
 /// Tramo de evolución del avatar según el nivel (0 a 5).
 /// Coincide con los títulos: Novato, En progreso, Intermedio, Avanzado, Élite, Chetado.
 int tramoAvatar(int nivel) {
@@ -172,11 +177,22 @@ class _PintorAvatar extends CustomPainter {
       );
     }
 
-    final hombro = 16 + m * 9 - (fem ? 2.5 : 0);
-    final cintura = 11.5 + m * 2 - (fem ? 1.5 : 0);
-    final cadera = cintura + (fem ? 4 : 1.5);
-    final brazo = 6 + m * 4.5 - (fem ? 0.8 : 0);
-    final pierna = 8 + m * 2.5;
+    // Contextura: qué tan delgado sigue (1 = recién parte, 0 = ya ganó músculo)
+    // y cuánta grasa le queda (la gruesa la va perdiendo al subir de nivel).
+    final delgado = c.contextura == 'delgada' ? 1 - m : 0.0;
+    final grasa = switch (c.contextura) {
+      'gruesa' => 1 - m * 0.85,
+      'media' => 0.3 * (1 - m),
+      _ => 0.0,
+    };
+
+    final hombro = 16 + m * 9 - (fem ? 2.5 : 0) - delgado * 3 + grasa * 1.5;
+    final cintura = 11.5 + m * 2 - (fem ? 1.5 : 0) - delgado * 2.5 + grasa * 7;
+    final cadera = cintura + (fem ? 4 : 1.5) + grasa;
+    final brazo = 6 + m * 4.5 - (fem ? 0.8 : 0) - delgado * 1.8 + grasa * 2.5;
+    final pierna = 8 + m * 2.5 - delgado * 2 + grasa * 3;
+    final panza = grasa > 0.2 ? grasa : 0.0;
+    final cabeza = 12.5 + grasa * 0.8;
 
     // ---- Pelo largo (por detrás) ----
     if (c.peinado == 2) {
@@ -210,7 +226,8 @@ class _PintorAvatar extends CustomPainter {
     // ---- Brazos (detrás del torso) ----
     for (final s in [-1, 1]) {
       final x0 = 50 + s * (hombro - brazo / 2 + 1);
-      final x1 = 50 + s * (hombro + 3 + m * 2);
+      // Las manos quedan por fuera de la panza
+      final x1 = 50 + s * math.max<double>(hombro + 3 + m * 2, cintura + panza * 3 + brazo * 0.6 + 1);
       _linea(canvas, x0, 54, x1, 88, brazo, piel);
       if (m >= 0.4) {
         _circ(canvas, x0 + s * (1 + m), 63, brazo * 0.62, piel); // bíceps
@@ -232,7 +249,22 @@ class _PintorAvatar extends CustomPainter {
     for (final s in [-1, 1]) {
       _circ(canvas, 50 + s * (hombro - brazo / 2 + 1), 54, brazo / 2 + 0.6, piel);
     }
-    if (m >= 0.6 && !fem) {
+    // ---- Panza (contextura gruesa o media al comienzo) ----
+    if (panza > 0) {
+      canvas.drawOval(
+        _rect(50 - cintura - panza * 3, 66 - panza * 4, 50 + cintura + panza * 3, 92),
+        _relleno(ropa),
+      );
+      _arco(
+        canvas,
+        _rect(50 - cintura - panza * 2, 70, 50 + cintura + panza * 2, 91),
+        25,
+        155,
+        0.8,
+        _oscurecer(ropa, 0.8),
+      );
+    }
+    if (m >= 0.6 && !fem && grasa < 0.4) {
       final sombra = _oscurecer(ropa, 0.82);
       _arco(canvas, _rect(41, 56, 50, 66), 20, 160, 0.8, sombra);
       _arco(canvas, _rect(50, 56, 59, 66), 20, 160, 0.8, sombra);
@@ -260,14 +292,17 @@ class _PintorAvatar extends CustomPainter {
     // ---- Cuello, cabeza y orejas ----
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        _rect(50 - 4.5 - m * 2, 38, 50 + 4.5 + m * 2, 51),
+        _rect(50 - 4.5 - m * 2 - grasa * 2, 38, 50 + 4.5 + m * 2 + grasa * 2, 51),
         Radius.circular(2 * _k),
       ),
       _relleno(piel),
     );
-    _circ(canvas, 50, 29, 12.5, piel);
-    _circ(canvas, 37.6, 30, 2.2, piel);
-    _circ(canvas, 62.4, 30, 2.2, piel);
+    _circ(canvas, 50, 29, cabeza, piel);
+    _circ(canvas, 50 - cabeza + 0.1, 30, 2.2, piel);
+    _circ(canvas, 50 + cabeza - 0.1, 30, 2.2, piel);
+    if (grasa > 0.5) {
+      _arco(canvas, _rect(44, 36.5, 56, 42.5), 30, 150, 0.7, pielOscura); // papada
+    }
 
     // ---- Pelo ----
     if (c.peinado == 1) {
@@ -322,6 +357,7 @@ class _PintorAvatar extends CustomPainter {
   bool shouldRepaint(covariant _PintorAvatar old) =>
       old.tramo != tramo ||
       old.c.genero != c.genero ||
+      old.c.contextura != c.contextura ||
       old.c.piel != c.piel ||
       old.c.peinado != c.peinado ||
       old.c.colorPelo != c.colorPelo ||
