@@ -9,6 +9,14 @@ PonteChetado es una aplicación móvil enfocada en la gestión y gamificación d
 
 **Qué problema resuelve:** mejora la retención y la fidelización de los socios, le da una imagen más premium al gimnasio y alivia la carga de los entrenadores gracias al chatbot y a las solicitudes de ayuda desde la app.
 
+## Pruébala en línea
+
+La app está publicada en Hostinger (servidor PHP y base de datos MySQL incluidos):
+
+**https://stormy-mediumturquoise-pelican-37.hostingersite.com**
+
+Se puede abrir en el computador o en el celular. En iPhone, desde Safari: botón Compartir → "Agregar a pantalla de inicio", y queda instalada con su ícono. Para entrar, usa las [cuentas de demostración](#cuentas-de-demostración).
+
 ## Funcionalidades
 
 | Épica | Qué incluye |
@@ -63,7 +71,7 @@ Para probar en un teléfono físico, escribir la IP del computador en `app/lib/c
 
 ### Cuentas de demostración
 
-Sirven en las dos opciones. Todas usan la contraseña **Chetado2026**:
+Sirven en las dos opciones y en la versión publicada. Todas usan la contraseña **Chetado2026**:
 
 | Rol | Correo |
 |---|---|
@@ -77,8 +85,8 @@ Sirven en las dos opciones. Todas usan la contraseña **Chetado2026**:
 
 | Tipo | Comando | Qué revisa |
 |---|---|---|
-| API (86 pruebas) | `C:\xampp\php\php.exe C:\xampp\htdocs\PonteChetado\pruebas\probar_api.php` | El flujo completo de las 15 historias contra la API real. Crea datos de prueba y los borra al terminar |
-| App (23 pruebas) | `flutter test` dentro de `app/` | Modelos, formato de datos, roles, ranking, solicitudes de ayuda y rutinas básicas |
+| API (88 pruebas) | `C:\xampp\php\php.exe C:\xampp\htdocs\PonteChetado\pruebas\probar_api.php` | El flujo completo de las 15 historias contra la API real. Crea datos de prueba y los borra al terminar |
+| App (25 pruebas) | `flutter test` dentro de `app/` | Modelos, formato de datos, roles, ranking, solicitudes de ayuda y rutinas básicas |
 | Código | `flutter analyze` dentro de `app/` | Errores y advertencias del código Dart |
 
 ## Integrantes
